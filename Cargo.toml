@@ -1,0 +1,18 @@
+[package]
+name = "beachhead-companion"
+version = "0.1.0"
+authors = ["Christian Klauser <christianklauser@outlook.com>"]
+repository = "https://github.com/SealedSun/beachhead-companion"
+readme = "README.md"
+keywords = ["docker", "redis", "discovery", "service"]
+license = "MIT"
+
+[dependencies]
+redis = "^0.5.2"
+shiplift = "^0.2"
+regex = "^0.1.55"
+docopt = "^0.6.78"
+log = "^0.3.5"
+env_logger = "^0.3.2"
+chrono = "^0.2.19"
+rustc-serialize = "^0.3.18"
