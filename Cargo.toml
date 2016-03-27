@@ -8,11 +8,36 @@ keywords = ["docker", "redis", "discovery", "service"]
 license = "MIT"
 
 [dependencies]
+# Redis client library.
 redis = "^0.5.2"
+
+# Library for communicating with the docker daemon.
 shiplift = "^0.2"
+
+# Used to parse domain specifications in container config.
 regex = "^0.1.55"
+
+# Argument parsing
 docopt = "^0.6.78"
+
+# Logging
 log = "^0.3.5"
 env_logger = "^0.3.2"
-chrono = "^0.2.19"
+
+# Beachhead-Companion deals with time (timeouts, intervals, etc.)
+chrono = "^0.2.20"
+
+# Docker URL
+url = "^0.5.5"
+
+# To deserialize docopt args
 rustc-serialize = "^0.3.18"
+
+# To generate error types
+quick-error = "^1.0.0"
+
+# MPMC channel implementation, used by chan-signal
+chan = "^0.1.17"
+
+# For handling SIGTERM and SIGINT
+chan-signal = "^0.1.5"
