@@ -2,18 +2,18 @@
 use std::fmt::{self, Display};
 use std::convert::From;
 use std::sync::Arc;
-use std::error::{Error};
+use std::error::Error;
 use std;
 
-use ::regex::{self};
-use ::redis::{self, RedisResult, Commands};
-use ::shiplift::{self, Docker};
-use ::chan_signal::{self, Signal};
-use ::chan;
-use ::rustc_serialize::json::{self, ToJson};
+use regex;
+use redis::{self, RedisResult, Commands};
+use shiplift::{self, Docker};
+use chan_signal::{self, Signal};
+use chan;
+use rustc_serialize::json::{self, ToJson};
 
-use ::common::{Config, MissingEnvVarHandling};
-use ::domain_spec::{DomainSpec, DomainSpecError};
+use common::{Config, MissingEnvVarHandling};
+use domain_spec::{DomainSpec, DomainSpecError};
 
 struct Context {
     redis_client: Option<redis::Client>,
@@ -23,8 +23,12 @@ struct Context {
 }
 
 impl Context {
-    fn new(config: Arc<Config>, termination_signal:  chan::Receiver<Signal>) -> Result<Context, CompanionError> {
-        Ok(Context { redis_client: None, docker_client: None,
+    fn new(config: Arc<Config>,
+           termination_signal: chan::Receiver<Signal>)
+           -> Result<Context, CompanionError> {
+        Ok(Context {
+            redis_client: None,
+            docker_client: None,
             config: config,
             termination_signal: termination_signal,
         })
@@ -34,13 +38,12 @@ impl Context {
         if let Some(ref mut client) = self.redis_client {
             Ok(client)
         } else {
-            let addr = redis::ConnectionAddr::Tcp(
-                self.config.redis_host.clone(),
-                self.config.redis_port);
+            let addr = redis::ConnectionAddr::Tcp(self.config.redis_host.clone(),
+                                                  self.config.redis_port);
             let info = redis::ConnectionInfo {
                 addr: Box::new(addr),
                 db: 0,
-                passwd: None
+                passwd: None,
             };
             let client = try!(redis::Client::open(info));
             self.redis_client = Some(client);
@@ -62,8 +65,9 @@ impl Context {
         }
     }
 
-    fn update_registration_for_container_internal(&mut self, container_name: &str)
-            -> Result<(),CompanionError> {
+    fn update_registration_for_container_internal(&mut self,
+                                                  container_name: &str)
+                                                  -> Result<(), CompanionError> {
         info!("Refreshing beachhead config for {}", container_name);
 
         // inspect docker container
@@ -90,22 +94,23 @@ impl Context {
             let env_opt = container.Config.Env;
             (container_host, env_opt)
         };
-        let mut specs = vec!();
+        let mut specs = vec![];
         if let Some(env) = env_opt {
             for line in env.iter() {
-                let parts : Vec<&str> = line.splitn(2,'=').collect();
+                let parts: Vec<&str> = line.splitn(2, '=').collect();
                 if parts.len() < 2 || &parts[0] != &config.envvar {
                     continue;
                 }
                 try!(DomainSpec::parse_all(&parts[1], &mut specs));
             }
-        }
-        else {
+        } else {
             // TODO implement missingenvvarhandling::automatic
             match config.missing_envvar {
                 MissingEnvVarHandling::Ignore => (),
                 MissingEnvVarHandling::Automatic | MissingEnvVarHandling::Report => {
-                    error!("No environment variable {} on container {}.", config.envvar, container_name);
+                    error!("No environment variable {} on container {}.",
+                           config.envvar,
+                           container_name);
                 }
             }
         }
@@ -113,7 +118,9 @@ impl Context {
 
         let mut published_config = json::Array::new();
         for spec in specs {
-            fn svc_config<T: ToJson>(domain_config: &mut json::Object, field: &str, value_opt: Option<T>) {
+            fn svc_config<T: ToJson>(domain_config: &mut json::Object,
+                                     field: &str,
+                                     value_opt: Option<T>) {
                 if let Some(value) = value_opt {
                     domain_config.insert(field.to_owned(), value.to_json());
                 }
@@ -127,10 +134,13 @@ impl Context {
             let mut domain_config = json::Object::new();
             svc_config(&mut domain_config, "id", Some(spec.spec_id()));
             svc_config(&mut domain_config, "domain", Some(spec.domain_name));
-            svc_config(&mut domain_config, "http", spec.http_port.map(|http_port|
-                                                                      backend_setup(&container_host, http_port)));
-            svc_config(&mut domain_config, "https", spec.https_port.map(|https_port|
-                                                                        backend_setup(&container_host, https_port)));
+            svc_config(&mut domain_config,
+                       "http",
+                       spec.http_port.map(|http_port| backend_setup(&container_host, http_port)));
+            svc_config(&mut domain_config,
+                       "https",
+                       spec.https_port
+                           .map(|https_port| backend_setup(&container_host, https_port)));
             published_config.push(domain_config.to_json());
         }
         let mut key = String::new();
@@ -150,11 +160,13 @@ impl Context {
         }
         Ok(())
     }
-    
-    fn update_registration_for_container(&mut self, container_name: &str)
-            -> Result<(),ContainerRefreshError<CompanionError>> {
 
-        try_!(self.update_registration_for_container_internal(container_name), container_name.to_owned());
+    fn update_registration_for_container(&mut self,
+                                         container_name: &str)
+                                         -> Result<(), ContainerRefreshError<CompanionError>> {
+
+        try_!(self.update_registration_for_container_internal(container_name),
+              container_name.to_owned());
         Ok(())
     }
 
@@ -163,7 +175,7 @@ impl Context {
             let rsig = &mut self.termination_signal;
             let timeout_duration = std::time::Duration::from_secs(refresh_seconds as u64);
             let refresh_timeout = chan::after(timeout_duration);
-            let do_continue : bool;
+            let do_continue: bool;
             chan_select! {
                 rsig.recv() => {
                     do_continue = false
@@ -184,10 +196,11 @@ impl Context {
         key.push_str(&self.config.key_prefix);
         key.push_str(container_name);
     }
-
 }
 
-pub fn main(config: Arc<Config>, container_names: Vec<String>) -> Result<(), CompanionAggregateError> {
+pub fn main(config: Arc<Config>,
+            container_names: Vec<String>)
+            -> Result<(), CompanionAggregateError> {
     // TODO: implement --enumerate
     let abort_signal = chan_signal::notify(&[Signal::INT, Signal::TERM]);
     let mut ctx = try!(Context::new(config.clone(), abort_signal));
@@ -205,19 +218,24 @@ pub fn main(config: Arc<Config>, container_names: Vec<String>) -> Result<(), Com
 #[derive(Debug)]
 pub struct ContainerRefreshError<T: Error> {
     pub container_name: String,
-    pub cause: T
+    pub cause: T,
 }
 
 impl<T: Error> Error for ContainerRefreshError<T> {
     fn description(&self) -> &str {
         "Failed to refresh container configuration."
     }
-    fn cause(&self) -> Option<&Error> { Some(&self.cause) }
+    fn cause(&self) -> Option<&Error> {
+        Some(&self.cause)
+    }
 }
 
-impl<T: Error+Display> Display for ContainerRefreshError<T> {
+impl<T: Error + Display> Display for ContainerRefreshError<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(fmt, "{} Container name: {}. Cause: ", self.description(), self.container_name));
+        try!(write!(fmt,
+                    "{} Container name: {}. Cause: ",
+                    self.description(),
+                    self.container_name));
         Display::fmt(&self.cause, fmt)
     }
 }
@@ -225,7 +243,10 @@ impl<T: Error+Display> Display for ContainerRefreshError<T> {
 impl<T: Error> From<(T, String)> for ContainerRefreshError<T> {
     fn from(value: (T, String)) -> ContainerRefreshError<T> {
         let (e, container_name) = value;
-        ContainerRefreshError { container_name: container_name, cause: e}
+        ContainerRefreshError {
+            container_name: container_name,
+            cause: e,
+        }
     }
 }
 

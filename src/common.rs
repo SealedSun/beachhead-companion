@@ -1,7 +1,7 @@
-use ::url::Url;
+use url::Url;
 use std::fmt::Display;
-use ::log;
-use ::std;
+use log;
+use std;
 use std::io::{stderr, Write};
 
 use env_logger;
@@ -58,12 +58,12 @@ pub struct Config {
 pub enum MissingEnvVarHandling {
     Automatic,
     Report,
-    Ignore
+    Ignore,
 }
 
 pub enum MissingContainerHandling {
     Report,
-    Ignore
+    Ignore,
 }
 
 #[cfg(test)]
@@ -79,17 +79,18 @@ pub fn init_log() {
     }
 }
 
-pub fn optional_result<R,E>(x_opt: Option<Result<R,E>>) -> Result<Option<R>, E> {
+pub fn optional_result<R, E>(x_opt: Option<Result<R, E>>) -> Result<Option<R>, E> {
     match x_opt {
         Some(Ok(x)) => Ok(Some(x)),
         Some(Err(e)) => Err(e),
-        None => Ok(None)
+        None => Ok(None),
     }
 }
 
 /// Display errors a bit more nicely, depending on whether logging is enabled or not.
 pub fn stay_calm_and<T, E>(result: Result<T, E>)
-    where E: Display {
+    where E: Display
+{
     match result {
         Ok(_) => (),
         Err(e) => {

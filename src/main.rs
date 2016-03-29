@@ -14,12 +14,16 @@ extern crate rustc_serialize;
 extern crate url;
 extern crate chan_signal;
 
-#[macro_use] extern crate log;
-#[macro_use] extern crate chan;
-#[macro_use] extern crate quick_error;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate chan;
+#[macro_use]
+extern crate quick_error;
+#[macro_use]
+extern crate lazy_static;
 
-use ::url::Url;
+use url::Url;
 use docopt::Docopt;
 
 #[macro_use]
@@ -118,7 +122,7 @@ struct Args {
     flag_error_missing_envvar: bool,
     flag_error_missing_container: bool,
     flag_ignore_missing_envvar: bool,
-    flag_enumerate: bool
+    flag_enumerate: bool,
 }
 
 // Implement Default by parsing an (almost) empty command line.
@@ -126,7 +130,7 @@ struct Args {
 impl Default for Args {
     fn default() -> Args {
         let argv = vec!["beachhead-companion", "--enumerate"];
-        let mut args : Args = DOCOPT.clone().argv(argv).decode().unwrap();
+        let mut args: Args = DOCOPT.clone().argv(argv).decode().unwrap();
         args.flag_enumerate = false;
         args
     }
@@ -147,20 +151,21 @@ impl Args {
                 Some(self.flag_expire)
             },
             refresh_seconds: self.flag_refresh
-            .map(|r| {
-                if r == 0 {
-                    None
-                } else {
-                    Some(r)
-                }
-            })
-            .unwrap(),
+                                 .map(|r| {
+                                     if r == 0 {
+                                         None
+                                     } else {
+                                         Some(r)
+                                     }
+                                 })
+                                 .unwrap(),
             docker_network: self.flag_docker_network,
-            missing_envvar: match (self.flag_error_missing_envvar, self.flag_ignore_missing_envvar) {
+            missing_envvar: match (self.flag_error_missing_envvar,
+                                   self.flag_ignore_missing_envvar) {
                 (true, true) => MissingEnvVarHandling::Automatic,
                 (false, false) => MissingEnvVarHandling::Automatic,
                 (true, _) => MissingEnvVarHandling::Report,
-                (_, true) => MissingEnvVarHandling::Ignore
+                (_, true) => MissingEnvVarHandling::Ignore,
             },
             missing_container: if self.flag_error_missing_container {
                 MissingContainerHandling::Report
@@ -195,7 +200,7 @@ fn args_transform(args: &mut Args) {
 fn main() {
     // Parse arguments (handles --help and --version)
     let mut args: Args = DOCOPT.decode()
-                             .unwrap_or_else(|e| e.exit());
+                               .unwrap_or_else(|e| e.exit());
 
     args_transform(&mut args);
 
@@ -213,10 +218,10 @@ fn init_log(args: &Args) -> Result<(), log::SetLoggerError> {
     let mut log_builder = env_logger::LogBuilder::new();
     log_builder.format(|record| {
         format!("{} [{}] {}: {}",
-        chrono::Local::now(),
-        record.location().module_path(),
-        record.level(),
-        record.args())
+                chrono::Local::now(),
+                record.location().module_path(),
+                record.level(),
+                record.args())
     });
     let level = match (args.flag_verbose, args.flag_quiet) {
         (false, false) => log::LogLevelFilter::Info,
@@ -232,7 +237,7 @@ fn init_log(args: &Args) -> Result<(), log::SetLoggerError> {
 
 #[cfg(test)]
 mod test {
-    use super::{USAGE, args_transform, Args };
+    use super::{USAGE, args_transform, Args};
     use docopt;
     use common;
 
@@ -245,7 +250,7 @@ mod test {
     fn args_quiet_verbose() {
         common::init_log();
         // #### GIVEN ####
-        let mut args : Args = Default::default();
+        let mut args: Args = Default::default();
         args.flag_quiet = true;
         args.flag_verbose = true;
 
@@ -261,7 +266,7 @@ mod test {
     fn args_quiet() {
         common::init_log();
         // #### GIVEN ####
-        let mut args : Args = Default::default();
+        let mut args: Args = Default::default();
         args.flag_quiet = true;
         args.flag_verbose = false;
 
@@ -277,7 +282,7 @@ mod test {
     fn args_verbose() {
         common::init_log();
         // #### GIVEN ####
-        let mut args : Args = Default::default();
+        let mut args: Args = Default::default();
         args.flag_quiet = false;
         args.flag_verbose = true;
 
@@ -293,7 +298,7 @@ mod test {
     fn args_refresh_default() {
         common::init_log();
         // #### GIVEN ####
-        let mut args : Args = Default::default();
+        let mut args: Args = Default::default();
         args.flag_expire = 60;
         args.flag_refresh = None;
 
@@ -301,20 +306,24 @@ mod test {
         args_transform(&mut args);
 
         // #### THEN  ####
-        assert!(args.flag_refresh.is_some(), "flag_refresh should have a default");
+        assert!(args.flag_refresh.is_some(),
+                "flag_refresh should have a default");
         assert!(args.flag_refresh.unwrap() < args.flag_expire,
-        "flag_refresh {} must be smaller than expire (60)", args.flag_refresh.unwrap());
+                "flag_refresh {} must be smaller than expire (60)",
+                args.flag_refresh.unwrap());
         assert!(args.flag_refresh.unwrap() <= args.flag_expire / 2,
-            "flag_refresh {} must be no more than half of expire (30)", args.flag_refresh.unwrap());
+                "flag_refresh {} must be no more than half of expire (30)",
+                args.flag_refresh.unwrap());
         assert!(args.flag_refresh.unwrap() >= args.flag_expire / 3,
-            "flag_refresh {} must be at least a third of expire (20)", args.flag_refresh.unwrap());
+                "flag_refresh {} must be at least a third of expire (20)",
+                args.flag_refresh.unwrap());
     }
 
     #[test]
     fn args_refresh_custom() {
         common::init_log();
         // #### GIVEN ####
-        let mut args : Args = Default::default();
+        let mut args: Args = Default::default();
         args.flag_expire = 60;
         args.flag_refresh = Some(50);
 
@@ -330,7 +339,7 @@ mod test {
     fn default_args_valid_config() {
         common::init_log();
         // #### GIVEN ####
-        let mut args : Args = Default::default();
+        let mut args: Args = Default::default();
         args_transform(&mut args);
         let args_expire = args.flag_expire;
 

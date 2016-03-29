@@ -26,11 +26,20 @@ impl DomainSpec {
         ID_PAT.replace_all(&self.domain_name, "_")
     }
 
-    pub fn parse_all(raw: &str, specs: &mut Vec<DomainSpec>) -> Result<(),DomainSpecError> {
-        fn parse_port(key: &str, value: Option<&str>, spec: &DomainSpec) -> Result<Option<u16>, DomainSpecError> {
-            match optional_result(value.map(|v| u16::from_str_radix(v,10))) {
-                Err(e) => Err(DomainSpecError { domain_name: spec.domain_name.clone(), cause: e, key: Some(key.to_owned()) }),
-                Ok(port) => Ok(port)
+    pub fn parse_all(raw: &str, specs: &mut Vec<DomainSpec>) -> Result<(), DomainSpecError> {
+        fn parse_port(key: &str,
+                      value: Option<&str>,
+                      spec: &DomainSpec)
+                      -> Result<Option<u16>, DomainSpecError> {
+            match optional_result(value.map(|v| u16::from_str_radix(v, 10))) {
+                Err(e) => {
+                    Err(DomainSpecError {
+                        domain_name: spec.domain_name.clone(),
+                        cause: e,
+                        key: Some(key.to_owned()),
+                    })
+                }
+                Ok(port) => Ok(port),
             }
         }
         for captures in DS_PAT.captures_iter(raw) {
@@ -44,16 +53,16 @@ impl DomainSpec {
             }
 
             let raw_params = captures.at(3)
-            .map(|params| params.trim().split(':').collect())
-            .unwrap_or_else(||Vec::new());
+                                     .map(|params| params.trim().split(':').collect())
+                                     .unwrap_or_else(|| Vec::new());
 
             let mut spec = DomainSpec {
                 domain_name: domain_name.to_owned(),
                 http_port: None,
-                https_port: None
+                https_port: None,
             };
             for raw_param in raw_params {
-                let param_parts : Vec<&str> = raw_param.splitn(2,'=').collect();
+                let param_parts: Vec<&str> = raw_param.splitn(2, '=').collect();
 
                 let key = param_parts[0].trim().to_lowercase();
                 let value = if param_parts.len() > 1 {
@@ -67,11 +76,11 @@ impl DomainSpec {
                     "http" => {
                         let parsed_port_opt = try!(parse_port(&key, value, &spec));
                         spec.http_port = Some(parsed_port_opt.unwrap_or(80));
-                    },
+                    }
                     "https" => {
                         let parsed_port_opt = try!(parse_port(&key, value, &spec));
                         spec.https_port = Some(parsed_port_opt.unwrap_or(443));
-                    },
+                    }
                     _ => {
                         warn!("Unknown domain spec parameter ");
                     }
@@ -97,12 +106,15 @@ pub struct DomainSpecError {
 
     // move into enum when more options come
     pub cause: ParseIntError,
-    pub key: Option<String>
+    pub key: Option<String>,
 }
 
 impl Display for DomainSpecError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(fmt, "{} Domain name: \"{}\"", self.description(), self.domain_name));
+        try!(write!(fmt,
+                    "{} Domain name: \"{}\"",
+                    self.description(),
+                    self.domain_name));
         if let Some(ref key) = self.key {
             try!(write!(fmt, " Option name: \"{}\"", key));
         }
@@ -131,8 +143,9 @@ mod tests {
         }
         let id = spec.spec_id();
         assert!(VALID_ID_PAT.is_match(&id),
-            "The id \"{}\" derived from domain {} is contains invalid characters.",
-            id, spec.domain_name);
+                "The id \"{}\" derived from domain {} is contains invalid characters.",
+                id,
+                spec.domain_name);
     }
 
     #[test]
@@ -175,7 +188,7 @@ mod tests {
 
         // #### WHEN  ####
         DomainSpec::parse_all("example.org.", &mut specs)
-        .expect("Parse \"example.org.\" successfully");
+            .expect("Parse \"example.org.\" successfully");
 
         // #### THEN  ####
         assert_eq!(specs.len(), 1);
@@ -194,7 +207,7 @@ mod tests {
 
         // #### WHEN  ####
         DomainSpec::parse_all("example.org:http", &mut specs)
-        .expect("Parse \"example.org:http\" successfully");
+            .expect("Parse \"example.org:http\" successfully");
 
         // #### THEN  ####
         assert_eq!(specs.len(), 1);
@@ -213,7 +226,7 @@ mod tests {
 
         // #### WHEN  ####
         DomainSpec::parse_all("example.org:https", &mut specs)
-        .expect("Parse \"example.org:https\" successfully");
+            .expect("Parse \"example.org:https\" successfully");
 
         // #### THEN  ####
         assert_eq!(specs.len(), 1);
@@ -232,7 +245,7 @@ mod tests {
 
         // #### WHEN  ####
         DomainSpec::parse_all("example.org:http=8080:https=8043", &mut specs)
-        .expect("Parse \"example.org:http=8080:https=8043\" successfully");
+            .expect("Parse \"example.org:http=8080:https=8043\" successfully");
 
         // #### THEN  ####
         assert_eq!(specs.len(), 1);
@@ -250,8 +263,11 @@ mod tests {
         let mut specs = Vec::new();
 
         // #### WHEN  ####
-        DomainSpec::parse_all("example.org:http:https=8043 admin.example.org:https=9043 www.example.org", &mut specs)
-        .expect("Parse \"example.org:http:https=8043 admin.example.org:https=9043 www.example.org\" successfully");
+        DomainSpec::parse_all("example.org:http:https=8043 admin.example.org:https=9043 \
+                               www.example.org",
+                              &mut specs)
+            .expect("Parse \"example.org:http:https=8043 admin.example.org:https=9043 \
+                     www.example.org\" successfully");
 
         // #### THEN  ####
         assert_eq!(specs.len(), 3);
@@ -280,8 +296,9 @@ mod tests {
         let mut specs = Vec::new();
 
         // #### WHEN  ####
-        DomainSpec::parse_all("admin-internal.example.org:http=8080:https=8043", &mut specs)
-        .expect("Parse \"admin-internal.example.org:http=8080:https=8043\" successfully");
+        DomainSpec::parse_all("admin-internal.example.org:http=8080:https=8043",
+                              &mut specs)
+            .expect("Parse \"admin-internal.example.org:http=8080:https=8043\" successfully");
 
         // #### THEN  ####
         assert_eq!(specs.len(), 1);
