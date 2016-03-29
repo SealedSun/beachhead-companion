@@ -41,3 +41,6 @@ chan = "^0.1.17"
 
 # For handling SIGTERM and SIGINT
 chan-signal = "^0.1.5"
+
+# To initialize Regex patterns
+lazy_static = "^0.1.15"

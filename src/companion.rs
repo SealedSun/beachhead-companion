@@ -1,60 +1,32 @@
 
-use std::num::ParseIntError;
 use std::fmt::{self, Display};
 use std::convert::From;
 use std::sync::Arc;
 use std::error::{Error};
 use std;
 
-use ::regex::{self, Regex};
+use ::regex::{self};
 use ::redis::{self, RedisResult, Commands};
 use ::shiplift::{self, Docker};
 use ::chan_signal::{self, Signal};
 use ::chan;
 use ::rustc_serialize::json::{self, ToJson};
 
-use super::{Config, MissingEnvVarHandling, MissingContainerHandling};
-
-/// Specifiction for a single domain.
-/// Contains either an http, an https or both ports.
-#[derive(Debug)]
-struct DomainSpec {
-    domain_name: String,
-    http_port: Option<u16>,
-    https_port: Option<u16>,
-}
-
-const DS_PAT: &'static str = r"([a-zA-Z0-9][a-zA-Z0-9.-]+[a-zA-Z0-9]\.?)(:(\S+))?";
-
-impl DomainSpec {
-    pub fn spec_id(&self) -> String {
-        return self.domain_name.replace(".","_")
-    }
-}
-
-fn optional_result<R,E>(x_opt: Option<Result<R,E>>) -> Result<Option<R>, E> {
-    match x_opt {
-        Some(Ok(x)) => Ok(Some(x)),
-        Some(Err(e)) => Err(e),
-        None => Ok(None)
-    }
-}
+use ::common::{Config, MissingEnvVarHandling};
+use ::domain_spec::{DomainSpec, DomainSpecError};
 
 struct Context {
     redis_client: Option<redis::Client>,
     docker_client: Option<Docker>,
     config: Arc<Config>,
     termination_signal: chan::Receiver<Signal>,
-    domain_spec_pat: Regex
 }
 
 impl Context {
     fn new(config: Arc<Config>, termination_signal:  chan::Receiver<Signal>) -> Result<Context, CompanionError> {
-        let domain_spec_pat = try!(Regex::new(DS_PAT));
         Ok(Context { redis_client: None, docker_client: None,
             config: config,
             termination_signal: termination_signal,
-            domain_spec_pat: domain_spec_pat
         })
     }
 
@@ -125,7 +97,7 @@ impl Context {
                 if parts.len() < 2 || &parts[0] != &config.envvar {
                     continue;
                 }
-                try!(self.parse_all_domain_specs(&parts[1], &mut specs));
+                try!(DomainSpec::parse_all(&parts[1], &mut specs));
             }
         }
         else {
@@ -213,69 +185,6 @@ impl Context {
         key.push_str(container_name);
     }
 
-    pub fn parse_all_domain_specs(&self, raw: &str, specs: &mut Vec<DomainSpec>) -> Result<(),DomainSpecError> {
-        fn parse_port(key: &str, value: Option<&str>, spec: &DomainSpec) -> Result<Option<u16>, DomainSpecError> {
-            match optional_result(value.map(|v| u16::from_str_radix(v,10))) {
-                Err(e) => Err(DomainSpecError { domain_name: spec.domain_name.clone(), cause: e, key: Some(key.to_owned()) }),
-                Ok(port) => Ok(port)
-            }
-        }
-        for captures in self.domain_spec_pat.captures_iter(raw) {
-            // The first capture group is guaranteed to be there.
-            let mut domain_name = captures.at(1).unwrap();
-
-            // Strip . at the end of FQDN
-            if domain_name.ends_with('.') {
-                // Chop off '.' at the end
-                domain_name = &domain_name[0..(domain_name.len() - 1)]
-            }
-
-            let raw_params = captures.at(3)
-            .map(|params| params.trim().split(':').collect())
-            .unwrap_or_else(||Vec::new());
-
-            let mut spec = DomainSpec {
-                domain_name: domain_name.to_owned(),
-                http_port: None,
-                https_port: None
-            };
-            for raw_param in raw_params {
-                let param_parts : Vec<&str> = raw_param.splitn(2,'=').collect();
-
-                let key = param_parts[0].trim().to_lowercase();
-                let value = if param_parts.len() > 1 {
-                    Some(param_parts[1].trim())
-                } else {
-                    None
-                };
-
-                // Merely having an 'http' or 'https' key present, enables the mapping
-                match key.as_str() {
-                    "http" => {
-                        let parsed_port_opt = try!(parse_port(&key, value, &spec));
-                        spec.http_port = Some(parsed_port_opt.unwrap_or(80));
-                    },
-                    "https" => {
-                        let parsed_port_opt = try!(parse_port(&key, value, &spec));
-                        spec.https_port = Some(parsed_port_opt.unwrap_or(443));
-                    },
-                    _ => {
-                        warn!("Unknown domain spec parameter ");
-                    }
-                }
-            }
-
-            // If neither http nor https have been specified, assume both mappings.
-            if spec.http_port.is_none() && spec.https_port.is_none() {
-                spec.http_port = Some(80);
-                spec.https_port = Some(443);
-            }
-
-            specs.push(spec);
-        }
-
-        Ok(())
-    }
 }
 
 pub fn main(config: Arc<Config>, container_names: Vec<String>) -> Result<(), CompanionAggregateError> {
@@ -291,34 +200,6 @@ pub fn main(config: Arc<Config>, container_names: Vec<String>) -> Result<(), Com
         }
     }
     Ok(())
-}
-
-#[derive(Debug)]
-pub struct DomainSpecError {
-    pub domain_name: String,
-
-    // move into enum when more options come
-    pub cause: ParseIntError,
-    pub key: Option<String>
-}
-
-impl Display for DomainSpecError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(fmt, "{} Domain name: \"{}\"", self.description(), self.domain_name));
-        if let Some(ref key) = self.key {
-            try!(write!(fmt, " Option name: \"{}\"", key));
-        }
-        write!(fmt, " Cause: {}", self.cause)
-    }
-}
-
-impl Error for DomainSpecError {
-    fn description(&self) -> &str {
-        "Failed to parse domain spec option."
-    }
-    fn cause(&self) -> Option<&Error> {
-        Some(&self.cause)
-    }
 }
 
 #[derive(Debug)]
