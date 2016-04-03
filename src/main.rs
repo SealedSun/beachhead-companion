@@ -52,7 +52,8 @@ Options:
     --refresh=SECONDS   Number of seconds after which to refresh registrations.
                         Defaults to 45% of the expiration time. At least 10 seconds.
                         0 means set once and then exit.
-    --key-prefix=KEY    Key prefix to use in redis. Will be followed by container name. [default: /beachhead/]
+    --key-prefix=KEY    Key prefix to use in redis. Will be followed by container name.
+                        [default: /beachhead/]
     --docker-url=URL    URL to the docker socket. [default: unix://var/run/docker.sock]
     --docker-network    Whether to use the container hostname (set) or use the bridge
                         network IP (unset/default).

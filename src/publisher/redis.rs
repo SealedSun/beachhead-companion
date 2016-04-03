@@ -11,12 +11,15 @@ use super::json_serializer;
 
 pub struct RedisPublisher {
     config: Arc<Config>,
-    redis_client_opt: Option<libredis::Client>
+    redis_client_opt: Option<libredis::Client>,
 }
 
 impl RedisPublisher {
     pub fn new(config: Arc<Config>) -> RedisPublisher {
-        RedisPublisher { config: config, redis_client_opt: None }
+        RedisPublisher {
+            config: config,
+            redis_client_opt: None,
+        }
     }
 
     fn create_redis_client(&mut self) -> RedisResult<&mut libredis::Client> {
@@ -24,7 +27,7 @@ impl RedisPublisher {
             Ok(client)
         } else {
             let addr = libredis::ConnectionAddr::Tcp(self.config.redis_host.clone(),
-                                                  self.config.redis_port);
+                                                     self.config.redis_port);
             let info = libredis::ConnectionInfo {
                 addr: Box::new(addr),
                 db: 0,
@@ -51,7 +54,8 @@ impl Publish for RedisPublisher {
             service_key(&config, &publication.host, &mut key);
             let key = key;
 
-            let published_config = json_serializer::domain_configs(&publication.host, &publication.specs);
+            let published_config = json_serializer::domain_configs(&publication.host,
+                                                                   &publication.specs);
             let redis_value = try!(json::encode(&published_config));
 
 
@@ -71,7 +75,7 @@ fn service_key(config: &Config, container_name: &str, key: &mut String) {
 }
 
 // ############### PUBLISHING ERROR #######################
-impl PublishingInnerError for libredis::RedisError { }
+impl PublishingInnerError for libredis::RedisError {}
 
 // ############### TESTING ################################
 #[cfg(test)]

@@ -11,7 +11,7 @@ pub trait Publish {
 
 pub struct Publication {
     pub host: String,
-    pub specs: Vec<DomainSpec>
+    pub specs: Vec<DomainSpec>,
 }
 
 pub mod redis;
@@ -21,7 +21,7 @@ mod json_serializer;
 
 #[derive(Debug)]
 pub struct PublishingError {
-    inner: Box<Error>
+    inner: Box<Error>,
 }
 
 impl Error for PublishingError {
@@ -41,7 +41,7 @@ impl Display for PublishingError {
 
 pub trait PublishingInnerError: Error { }
 
-impl<T:PublishingInnerError+'static> From<T> for PublishingError {
+impl<T: PublishingInnerError + 'static> From<T> for PublishingError {
     fn from(val: T) -> PublishingError {
         PublishingError { inner: Box::new(val) }
     }

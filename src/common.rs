@@ -65,11 +65,15 @@ pub enum MissingContainerHandling {
 }
 
 impl Default for MissingEnvVarHandling {
-    fn default() -> MissingEnvVarHandling { MissingEnvVarHandling::Automatic }
+    fn default() -> MissingEnvVarHandling {
+        MissingEnvVarHandling::Automatic
+    }
 }
 
 impl Default for MissingContainerHandling {
-    fn default() -> MissingContainerHandling { MissingContainerHandling::Ignore }
+    fn default() -> MissingContainerHandling {
+        MissingContainerHandling::Ignore
+    }
 }
 
 // This is just intended as a shorthand for unit testing.
@@ -89,7 +93,7 @@ impl Default for Config {
             envvar: "BEACHHEAD_DOMAINS".to_owned(),
             dry_run: false,
             missing_envvar: Default::default(),
-            missing_container: Default::default()
+            missing_container: Default::default(),
         }
     }
 }
@@ -123,8 +127,8 @@ pub fn stay_calm_and<T, E>(result: Result<T, E>)
     match result {
         Ok(_) => (),
         Err(e) => {
-            // We need errors to be shown to the user. If we can, we use the error logging mechanism.
-            // Otherwise, we just print to stderr.
+            // We need errors to be shown to the user. If we can, we use the error logging
+            // mechanism. Otherwise, we just print to stderr.
             if log_enabled!(log::LogLevel::Error) {
                 error!("Fatal error: {}", e);
             } else {
@@ -148,7 +152,7 @@ mod tests {
         // #### GIVEN ####
 
         // #### WHEN  ####
-        let config : Config = Default::default();
+        let config: Config = Default::default();
 
         // #### THEN  ####
         // no panic

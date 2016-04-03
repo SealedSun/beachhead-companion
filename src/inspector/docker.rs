@@ -11,12 +11,15 @@ use super::*;
 
 pub struct DockerInspector {
     config: Arc<Config>,
-    docker_client_opt: Option<Docker>
+    docker_client_opt: Option<Docker>,
 }
 
 impl DockerInspector {
     pub fn new(config: Arc<Config>) -> DockerInspector {
-        DockerInspector { config: config, docker_client_opt: None }
+        DockerInspector {
+            config: config,
+            docker_client_opt: None,
+        }
     }
 
     fn create_docker_client(&mut self) -> &mut Docker {
@@ -36,15 +39,15 @@ impl Inspect for DockerInspector {
         panic!("docker inspector enumerate not implemented.")
     }
     fn inspect(&mut self, container_name: &str) -> Result<Inspection, InspectionError> {
-        let config : Arc<Config> = self.config.clone();
+        let config: Arc<Config> = self.config.clone();
         let (container_host, env_opt) = {
             let docker = self.create_docker_client();
             let containers = docker.containers();
             let container_ref = containers.get(container_name);
             let container = try!(container_ref.inspect());
             // When docker network is active, we use the container name (=hostname)
-            // otherwise, we use "IPAddress", which hopefully maps to the ip on the bridge interface.
-            // At this point, the shiplift library doesn't know about 'docker networks'
+            // otherwise, we use "IPAddress", which hopefully maps to the ip on the bridge
+            // interface. At this point, the shiplift library doesn't know about 'docker networks'
             let container_host = if config.docker_network {
                 container_name.to_owned()
             } else {
@@ -59,12 +62,19 @@ impl Inspect for DockerInspector {
         let mut envvar_present = false;
         let mut specs = Vec::new();
         try!(parse_container_env_vars(&env_opt, &config, &mut envvar_present, &mut specs));
-        Ok(Inspection { envvar_present: envvar_present, specs: specs, host: container_host })
+        Ok(Inspection {
+            envvar_present: envvar_present,
+            specs: specs,
+            host: container_host,
+        })
     }
 }
 
-fn parse_container_env_vars(env_opt: &Option<Vec<String>>, config: &Config, envvar_present: &mut bool, specs: &mut Vec<DomainSpec>)
-        -> Result<(), InspectionError> {
+fn parse_container_env_vars(env_opt: &Option<Vec<String>>,
+                            config: &Config,
+                            envvar_present: &mut bool,
+                            specs: &mut Vec<DomainSpec>)
+                            -> Result<(), InspectionError> {
     if let Some(ref env) = *env_opt {
         for line in env.iter() {
             let parts: Vec<&str> = line.splitn(2, '=').collect();
@@ -80,16 +90,20 @@ fn parse_container_env_vars(env_opt: &Option<Vec<String>>, config: &Config, envv
 
 // ############### INSPECTION ERROR #######################
 
-impl InspectionInnerError for domain_spec::DomainSpecError { }
+impl InspectionInnerError for domain_spec::DomainSpecError {}
 
 #[derive(Debug)]
 struct ShipliftError {
-    actual: shiplift::errors::Error
+    actual: shiplift::errors::Error,
 }
 
 impl Error for ShipliftError {
-    fn cause(&self) -> Option<&Error> { None }
-    fn description(&self) -> &'static str { "Error while communicating with the docker daemon." }
+    fn cause(&self) -> Option<&Error> {
+        None
+    }
+    fn description(&self) -> &'static str {
+        "Error while communicating with the docker daemon."
+    }
 }
 
 impl Display for ShipliftError {
@@ -98,7 +112,7 @@ impl Display for ShipliftError {
     }
 }
 
-impl InspectionInnerError for ShipliftError { }
+impl InspectionInnerError for ShipliftError {}
 
 impl From<shiplift::errors::Error> for InspectionError {
     fn from(err: shiplift::errors::Error) -> InspectionError {
@@ -123,14 +137,15 @@ mod tests {
         // #### GIVEN ####
         let mut specs = Vec::new();
         let mut present = false;
-        let config : Config = Default::default();
+        let config: Config = Default::default();
         let env = None;
 
         // #### WHEN  ####
-        parse_container_env_vars(&env, &config, &mut present, &mut specs).expect("parse_container_env_vars shouldn't fail");
+        parse_container_env_vars(&env, &config, &mut present, &mut specs)
+            .expect("parse_container_env_vars shouldn't fail");
 
         // #### THEN  ####
-        assert!(!present,"envvar was present");
+        assert!(!present, "envvar was present");
         assert_eq!(specs.len(), 0);
     }
 
@@ -140,19 +155,17 @@ mod tests {
         // #### GIVEN ####
         let mut specs = Vec::new();
         let mut present = false;
-        let config : Config = Default::default();
-        let env = Some(vec![
-            "PATH=abc".to_owned(),
-            "imanenvvariswear".to_owned(),
-            "NOT_BEACHHEAD=example.org".to_owned()
-        ]);
+        let config: Config = Default::default();
+        let env = Some(vec!["PATH=abc".to_owned(),
+                            "imanenvvariswear".to_owned(),
+                            "NOT_BEACHHEAD=example.org".to_owned()]);
 
         // #### WHEN  ####
         parse_container_env_vars(&env, &config, &mut present, &mut specs)
             .expect("parse_container_env_vars shouldn't fail");
 
         // #### THEN  ####
-        assert!(!present,"envvar was present");
+        assert!(!present, "envvar was present");
         assert_eq!(specs.len(), 0);
     }
 
@@ -162,7 +175,7 @@ mod tests {
         // #### GIVEN ####
         let mut specs = Vec::new();
         let mut present = false;
-        let config : Config = Default::default();
+        let config: Config = Default::default();
         let env = Some(vec![
             "PATH=abc".to_owned(),
             format!("{}",config.envvar),
@@ -171,10 +184,10 @@ mod tests {
 
         // #### WHEN  ####
         parse_container_env_vars(&env, &config, &mut present, &mut specs)
-        .expect("parse_container_env_vars shouldn't fail");
+            .expect("parse_container_env_vars shouldn't fail");
 
         // #### THEN  ####
-        assert!(!present,"envvar was present");
+        assert!(!present, "envvar was present");
         assert_eq!(specs.len(), 0);
     }
 
@@ -184,7 +197,7 @@ mod tests {
         // #### GIVEN ####
         let mut specs = Vec::new();
         let mut present = false;
-        let config : Config = Default::default();
+        let config: Config = Default::default();
         let env = Some(vec![
             "PATH=abc".to_owned(),
             format!("{}=example.org",config.envvar),
@@ -193,10 +206,10 @@ mod tests {
 
         // #### WHEN  ####
         parse_container_env_vars(&env, &config, &mut present, &mut specs)
-        .expect("parse_container_env_vars shouldn't fail");
+            .expect("parse_container_env_vars shouldn't fail");
 
         // #### THEN  ####
-        assert!(present,"envvar was not present");
+        assert!(present, "envvar was not present");
         assert_eq!(specs.len(), 1);
         assert_eq!(specs[0].domain_name, "example.org");
     }
@@ -207,7 +220,7 @@ mod tests {
         // #### GIVEN ####
         let mut specs = Vec::new();
         let mut present = false;
-        let config : Config = Default::default();
+        let config: Config = Default::default();
         let env = Some(vec![
             "PATH=abc".to_owned(),
             format!("{}=example.org www.example.org",config.envvar),
@@ -216,10 +229,10 @@ mod tests {
 
         // #### WHEN  ####
         parse_container_env_vars(&env, &config, &mut present, &mut specs)
-        .expect("parse_container_env_vars shouldn't fail");
+            .expect("parse_container_env_vars shouldn't fail");
 
         // #### THEN  ####
-        assert!(present,"envvar was not present");
+        assert!(present, "envvar was not present");
         assert_eq!(specs.len(), 2);
         // exact parsing is covered in domain_spec tests. We just do some very basic sanity checks.
         assert!(specs[0].domain_name != specs[1].domain_name);
@@ -231,21 +244,19 @@ mod tests {
         // #### GIVEN ####
         let mut specs = Vec::new();
         let mut present = false;
-        let config : Config = Default::default();
-        let env = Some(vec![
-            "PATH=abc".to_owned(),
-            format!("{}=example.org www.example.org", config.envvar),
-            "imanenvvariswear".to_owned(),
-            format!("{}=admin.example.org", config.envvar),
-            "mixed_CaseIs_cool=NOT!!".to_owned()
-        ]);
+        let config: Config = Default::default();
+        let env = Some(vec!["PATH=abc".to_owned(),
+                            format!("{}=example.org www.example.org", config.envvar),
+                            "imanenvvariswear".to_owned(),
+                            format!("{}=admin.example.org", config.envvar),
+                            "mixed_CaseIs_cool=NOT!!".to_owned()]);
 
         // #### WHEN  ####
         parse_container_env_vars(&env, &config, &mut present, &mut specs)
-        .expect("parse_container_env_vars shouldn't fail");
+            .expect("parse_container_env_vars shouldn't fail");
 
         // #### THEN  ####
-        assert!(present,"envvar was not present");
+        assert!(present, "envvar was not present");
         assert_eq!(specs.len(), 3);
         // exact parsing is covered in domain_spec tests. We just do some very basic sanity checks.
         assert!(specs[0].domain_name != specs[1].domain_name);
@@ -259,7 +270,7 @@ mod tests {
         // #### GIVEN ####
         let mut specs = Vec::new();
         let mut present = false;
-        let config : Config = Default::default();
+        let config: Config = Default::default();
         let env = Some(vec![
             format!("{}=example.org", config.envvar),
             format!("{}=!!*&^$#$:", config.envvar),
@@ -267,10 +278,10 @@ mod tests {
 
         // #### WHEN  ####
         parse_container_env_vars(&env, &config, &mut present, &mut specs)
-        .expect("parse_container_env_vars shouldn't fail");
+            .expect("parse_container_env_vars shouldn't fail");
 
         // #### THEN  ####
-        assert!(present,"envvar was not present");
+        assert!(present, "envvar was not present");
         assert_eq!(specs.len(), 1);
         // exact parsing is covered in domain_spec tests. We just do some very basic sanity checks.
         assert_eq!(specs[0].domain_name, "example.org");
@@ -280,7 +291,7 @@ mod tests {
     fn initialize() {
         common::init_log();
         // #### GIVEN ####
-        let config : Arc<Config> = Arc::new(Default::default());
+        let config: Arc<Config> = Arc::new(Default::default());
 
         // #### WHEN  ####
         DockerInspector::new(config.clone());
