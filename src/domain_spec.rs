@@ -8,7 +8,7 @@ use common::optional_result;
 
 /// Specification for a single domain.
 /// Contains either an http, an https or both ports.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DomainSpec {
     pub domain_name: String,
     pub http_port: Option<u16>,

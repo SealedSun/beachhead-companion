@@ -4,8 +4,6 @@ use log;
 use std;
 use std::io::{stderr, Write};
 
-use env_logger;
-
 /// This macro is syntactic sugar for passing additional arguments to an error "conversion
 /// constructor". The idea is that you define `From<(YourError, Additional, Args)>` (a conversion
 /// from a tuple to an error) and then use this macro to supply the additional arguments.
@@ -66,8 +64,39 @@ pub enum MissingContainerHandling {
     Ignore,
 }
 
+impl Default for MissingEnvVarHandling {
+    fn default() -> MissingEnvVarHandling { MissingEnvVarHandling::Automatic }
+}
+
+impl Default for MissingContainerHandling {
+    fn default() -> MissingContainerHandling { MissingContainerHandling::Ignore }
+}
+
+// This is just intended as a shorthand for unit testing.
+// For the real application, the default configuration is derived from the default Args struct,
+// which, in turn, is defined by the docopt USAGE.
+#[cfg(test)]
+impl Default for Config {
+    fn default() -> Config {
+        Config {
+            redis_host: "localhost".to_owned(),
+            redis_port: 6379,
+            key_prefix: "".to_owned(),
+            expire_seconds: Some(60),
+            refresh_seconds: Some(27),
+            docker_url: Url::parse("unix://var/run/docker.sock").unwrap(),
+            docker_network: false,
+            envvar: "BEACHHEAD_DOMAINS".to_owned(),
+            dry_run: false,
+            missing_envvar: Default::default(),
+            missing_container: Default::default()
+        }
+    }
+}
+
 #[cfg(test)]
 pub fn init_log() {
+    use env_logger;
     lazy_static! {
         static ref TEST_LOG : bool = {
             env_logger::init().expect("Initialize test logger from env var RUST_LOG");
@@ -94,7 +123,7 @@ pub fn stay_calm_and<T, E>(result: Result<T, E>)
     match result {
         Ok(_) => (),
         Err(e) => {
-            // We need erros to be shown to the user. If we can, we use the error logging mechanism.
+            // We need errors to be shown to the user. If we can, we use the error logging mechanism.
             // Otherwise, we just print to stderr.
             if log_enabled!(log::LogLevel::Error) {
                 error!("Fatal error: {}", e);
@@ -106,5 +135,23 @@ pub fn stay_calm_and<T, E>(result: Result<T, E>)
             }
             std::process::exit(100);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_config() {
+        init_log();
+        // #### GIVEN ####
+
+        // #### WHEN  ####
+        let config : Config = Default::default();
+
+        // #### THEN  ####
+        // no panic
+        assert!(config.expire_seconds.is_some());
     }
 }

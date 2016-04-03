@@ -29,6 +29,8 @@ use docopt::Docopt;
 #[macro_use]
 mod common;
 mod domain_spec;
+mod inspector;
+mod publisher;
 mod companion;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -61,7 +63,7 @@ Options:
                         on each refresh (containers can come and go)
     --error-missing-envvar
                         Consider `envvar` missing on a container an error. Automatically enabled
-                        for containers that are listed explicityly unless --ignore-missing-envvar
+                        for containers that are listed eplicitly unless --ignore-missing-envvar
                         is present.
     --ignore-missing-envvar
                         Ignore missing `envvar` environment variables. Automatically enabled on
