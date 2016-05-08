@@ -3,7 +3,8 @@ use std::env;
 use std::sync::Arc;
 use std::rc::Rc;
 
-use common::{stay_calm_and, stay_very_calm_and, Config, MissingContainerHandling, MissingEnvVarHandling};
+use common::{stay_calm_and, stay_very_calm_and, Config, MissingContainerHandling,
+             MissingEnvVarHandling};
 
 extern crate docopt;
 extern crate regex;
@@ -143,7 +144,7 @@ impl Default for Args {
 }
 
 impl Args {
-    fn deconstruct(self) -> (Config,Vec<String>) {
+    fn deconstruct(self) -> (Config, Vec<String>) {
         let config = Config {
             redis_host: Rc::new(self.flag_redis_host),
             redis_port: self.flag_redis_port,
@@ -178,7 +179,7 @@ impl Args {
                 MissingContainerHandling::Report
             } else {
                 MissingContainerHandling::Ignore
-            }
+            },
         };
         (config, self.arg_containers)
     }
@@ -221,8 +222,11 @@ fn main() {
     let docker_inspector = Box::new(inspector::docker::DockerInspector::new(config.clone()));
     let redis_publisher = Box::new(publisher::redis::RedisPublisher::new(config.clone()));
 
-    stay_very_calm_and(companion::run(
-        config, docker_inspector, redis_publisher, abort_signal, &containers));
+    stay_very_calm_and(companion::run(config,
+                                      docker_inspector,
+                                      redis_publisher,
+                                      abort_signal,
+                                      &containers));
 }
 
 /// Handles the verbosity options by initializing the logger accordingly.

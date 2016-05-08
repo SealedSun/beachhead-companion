@@ -10,29 +10,34 @@ use log::LogLevel;
 use chan;
 use chan_signal::Signal;
 
-use ::inspector::{Inspect, Inspection, InspectionError};
-use ::publisher::{Publication, PublishingError, Publish};
-use ::common::{Config, MissingEnvVarHandling, MissingContainerHandling};
+use inspector::{Inspect, Inspection, InspectionError};
+use publisher::{Publication, PublishingError, Publish};
+use common::{Config, MissingEnvVarHandling, MissingContainerHandling};
 
 struct Context {
     pub config: Arc<Config>,
     pub inspector: Box<Inspect>,
     pub publisher: Box<Publish>,
-    pub termination_signal: chan::Receiver<Signal>
+    pub termination_signal: chan::Receiver<Signal>,
 }
 
 impl Context {
-    fn new(config: Arc<Config>, inspector: Box<Inspect>, publisher: Box<Publish>,
-        termination_signal: chan::Receiver<Signal>) -> Context {
+    fn new(config: Arc<Config>,
+           inspector: Box<Inspect>,
+           publisher: Box<Publish>,
+           termination_signal: chan::Receiver<Signal>)
+           -> Context {
         Context {
             config: config,
             termination_signal: termination_signal,
             inspector: inspector,
-            publisher: publisher
+            publisher: publisher,
         }
     }
 
-    fn inspect(&mut self, container_name: Pending<Rc<String>>) -> Result<Pending<Inspection>, CompanionError> {
+    fn inspect(&mut self,
+               container_name: Pending<Rc<String>>)
+               -> Result<Pending<Inspection>, CompanionError> {
         container_name.try_map(|name| self.inspector.inspect(&name)).map_err(From::from)
     }
 
@@ -41,12 +46,18 @@ impl Context {
         Ok(())
     }
 
-    fn enumerate(&mut self, explicit_container_names: &Vec<Rc<String>>) -> (Vec<Pending<Rc<String>>>, Result<(), CompanionError>) {
-        let mut container_index : HashMap<Rc<String>, Pending<Rc<String>>> = HashMap::new();
+    fn enumerate(&mut self,
+                 explicit_container_names: &Vec<Rc<String>>)
+                 -> (Vec<Pending<Rc<String>>>, Result<(), CompanionError>) {
+        let mut container_index: HashMap<Rc<String>, Pending<Rc<String>>> = HashMap::new();
         // Add explicitly listed containers
         for name in explicit_container_names {
-            let key : Rc<String> = name.clone();
-            let _ = container_index.insert(key, Pending { explicit: true, todo: name.clone() });
+            let key: Rc<String> = name.clone();
+            let _ = container_index.insert(key,
+                                           Pending {
+                                               explicit: true,
+                                               todo: name.clone(),
+                                           });
         }
 
         // Add enumerated containers
@@ -56,14 +67,18 @@ impl Context {
             let mut enumeration = Vec::new();
             if let Err(e) = self.inspector.enumerate(&mut enumeration) {
                 debug!(concat!("Enumeration failed. Program will continue but the following ",
-                    "error will be returned: {}"), e);
+                               "error will be returned: {}"),
+                       e);
                 enum_result = Err(e)
             } else {
                 enum_result = Ok(());
                 for name in enumeration.drain(..) {
                     let boxed_name = Rc::new(name);
                     let key = boxed_name.clone();
-                    container_index.entry(key).or_insert(Pending { explicit: false, todo: boxed_name });
+                    container_index.entry(key).or_insert(Pending {
+                        explicit: false,
+                        todo: boxed_name,
+                    });
                 }
             }
         } else {
@@ -101,19 +116,21 @@ impl Context {
             false
         }
     }
-
 }
 
 fn to_publication(inspection: Pending<Inspection>) -> Publication {
     Publication {
         host: inspection.todo.host,
-        specs: inspection.todo.specs
+        specs: inspection.todo.specs,
     }
 }
 
-pub fn run(config: Arc<Config>, inspector: Box<Inspect>, publisher: Box<Publish>,
-            termination_signal: chan::Receiver<Signal>, explicit_container_names: &Vec<Rc<String>>)
-        -> Result<(), Vec<CompanionError>> {
+pub fn run(config: Arc<Config>,
+           inspector: Box<Inspect>,
+           publisher: Box<Publish>,
+           termination_signal: chan::Receiver<Signal>,
+           explicit_container_names: &Vec<Rc<String>>)
+           -> Result<(), Vec<CompanionError>> {
     let mut ctx = Context::new(config.clone(), inspector, publisher, termination_signal);
     info!("Companion initialized.");
 
@@ -154,30 +171,34 @@ pub fn run(config: Arc<Config>, inspector: Box<Inspect>, publisher: Box<Publish>
                         level = LogLevel::Info;
                         consider_error = false
                     }
-                    log!(level, "Failed to inspect {}. Skipping. Error: {}", current_container, e);
+                    log!(level,
+                         "Failed to inspect {}. Skipping. Error: {}",
+                         current_container,
+                         e);
                     if consider_error {
                         errors.push(e)
                     }
                     continue;
-                },
-                Ok(x) => x
+                }
+                Ok(x) => x,
             };
 
             // Handle missing env var
             if !inspection.todo.envvar_present {
                 let level;
                 match (was_explicit, config.missing_envvar) {
-                    (true, MissingEnvVarHandling::Automatic) |  (_, MissingEnvVarHandling::Report) => {
+                    (true, MissingEnvVarHandling::Automatic) |
+                    (_, MissingEnvVarHandling::Report) => {
                         level = LogLevel::Error;
-                        errors.push(CompanionError::EnvVarMissing(
-                            current_container.clone(), config.envvar.to_owned()))
-                    },
-                    (_,_) => {
-                        level = LogLevel::Info
+                        errors.push(CompanionError::EnvVarMissing(current_container.clone(),
+                                                                  config.envvar.to_owned()))
                     }
+                    (_, _) => level = LogLevel::Info,
                 }
-                log!(level, "No environment variable '{}' configured for container {}. Skipping.",
-                    config.envvar, current_container);
+                log!(level,
+                     "No environment variable '{}' configured for container {}. Skipping.",
+                     config.envvar,
+                     current_container);
                 continue;
             }
 
@@ -185,14 +206,17 @@ pub fn run(config: Arc<Config>, inspector: Box<Inspect>, publisher: Box<Publish>
             let publication = to_publication(inspection);
 
             if config.dry_run {
-                info!("DRY RUN: would update {} with {:#?}", current_container, publication)
-            }
-            else {
+                info!("DRY RUN: would update {} with {:#?}",
+                      current_container,
+                      publication)
+            } else {
                 info!("Updating configuration for container {}. Publishing {:?}",
-                    current_container, publication);
+                      current_container,
+                      publication);
                 if let Err(e) = ctx.publish(publication) {
                     error!("Failed to publish updated configuration for container '{}'. Error: {}",
-                    current_container, e);
+                           current_container,
+                           e);
                     errors.push(e);
                 }
             }
@@ -207,9 +231,9 @@ pub fn run(config: Arc<Config>, inspector: Box<Inspect>, publisher: Box<Publish>
             // Return errors from the last iteration. This is mainly useful for the case where
             // we only run once. Lets the tool set an appropriate status code on program exit.
             if errors.is_empty() {
-                return Ok(())
+                return Ok(());
             } else {
-                return Err(errors)
+                return Err(errors);
             }
         }
     }
@@ -229,11 +253,19 @@ struct Pending<T> {
 impl<T> Pending<T> {
     #[allow(dead_code)]
     pub fn map<R, F: FnOnce(T) -> R>(self, f: F) -> Pending<R> {
-        Pending { explicit: self.explicit, todo: f(self.todo) }
+        Pending {
+            explicit: self.explicit,
+            todo: f(self.todo),
+        }
     }
     pub fn try_map<R, E, F: FnOnce(T) -> Result<R, E>>(self, f: F) -> Result<Pending<R>, E> {
         let explicit = self.explicit;
-        f(self.todo).map(|t| Pending { explicit: explicit, todo: t })
+        f(self.todo).map(|t| {
+            Pending {
+                explicit: explicit,
+                todo: t,
+            }
+        })
     }
 }
 
@@ -249,7 +281,7 @@ impl<T: PartialEq> PartialEq for Pending<T> {
     }
 }
 
-impl<T: Eq> Eq for Pending<T> { }
+impl<T: Eq> Eq for Pending<T> {}
 impl<T: Ord> Ord for Pending<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.todo.cmp(&other.todo)

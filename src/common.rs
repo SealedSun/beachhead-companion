@@ -55,7 +55,7 @@ pub struct Config {
     /// Instead of (or in addition to) listing containers explicitly, enumerate the containers
     /// running on the docker host. Containers found via enumeration and not listed explicitly are
     /// have slightly different error handling by default.
-    pub enumerate: bool
+    pub enumerate: bool,
 }
 
 /// Behaviour when confronted with a container that does not have a beachhead environment variable
@@ -111,7 +111,7 @@ impl Default for Config {
             dry_run: false,
             missing_envvar: Default::default(),
             missing_container: Default::default(),
-            enumerate: false
+            enumerate: false,
         }
     }
 }

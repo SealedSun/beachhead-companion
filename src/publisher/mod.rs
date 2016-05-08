@@ -40,7 +40,7 @@ impl Display for PublishingError {
     }
 }
 
-pub trait PublishingInnerError: Error { }
+pub trait PublishingInnerError: Error {}
 
 impl<T: PublishingInnerError + 'static> From<T> for PublishingError {
     fn from(val: T) -> PublishingError {

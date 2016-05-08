@@ -15,7 +15,7 @@ pub struct Inspection {
 
 pub mod docker;
 
-    // ############### INSPECTION ERROR #######################
+// ############### INSPECTION ERROR #######################
 
 #[derive(Debug)]
 pub struct InspectionError {
@@ -37,7 +37,7 @@ impl Display for InspectionError {
     }
 }
 
-pub trait InspectionInnerError: Error { }
+pub trait InspectionInnerError: Error {}
 
 impl<T: InspectionInnerError + 'static> From<T> for InspectionError {
     fn from(val: T) -> InspectionError {
