@@ -3,6 +3,7 @@ use std::fmt::Display;
 use log;
 use std;
 use std::io::{stderr, Write};
+use std::rc::Rc;
 
 /// This macro is syntactic sugar for passing additional arguments to an error "conversion
 /// constructor". The idea is that you define `From<(YourError, Additional, Args)>` (a conversion
@@ -28,11 +29,11 @@ macro_rules! try_ {
 /// more naturally.
 pub struct Config {
     /// The hostname or ip address of the redis server.
-    pub redis_host: String,
+    pub redis_host: Rc<String>,
     /// The port of the redis server.
     pub redis_port: u16,
     /// The prefix for the keys to insert into redis. Will be followed by the container name.
-    pub key_prefix: String,
+    pub key_prefix: Rc<String>,
     /// The expiration for registrations in seconds. None means no expiration.
     /// If there is some expiration
     pub expire_seconds: Option<u32>,
@@ -44,23 +45,39 @@ pub struct Config {
     /// Whether to use the container hostname (true) or lookup the bridge network IP.
     pub docker_network: bool,
     /// Name of the environment variable to look up in docker container configuration.
-    pub envvar: String,
+    pub envvar: Rc<String>,
     /// Indicates whether this is a dry-run where the Redis update is not performed.
     pub dry_run: bool,
     /// How to handle missing environment variables on containers.
     pub missing_envvar: MissingEnvVarHandling,
     /// How to handle missing containers.
     pub missing_container: MissingContainerHandling,
+    /// Instead of (or in addition to) listing containers explicitly, enumerate the containers
+    /// running on the docker host. Containers found via enumeration and not listed explicitly are
+    /// have slightly different error handling by default.
+    pub enumerate: bool
 }
 
+/// Behaviour when confronted with a container that does not have a beachhead environment variable
+/// set. See enum constants for details.
+#[derive(Debug,Eq,PartialEq,Copy,Clone)]
 pub enum MissingEnvVarHandling {
+    /// Report error for explicitly listed containers. Ignore containers found via enumeration.
     Automatic,
+    /// Report missing environment variables as an error for all containers.
     Report,
+    /// Simply ignore missing environment variables for all containers.
     Ignore,
 }
 
+/// Behaviour when confronted with a container that cannot be inspected. See enum constants for
+/// details. The main idea behind this setting is that it's not beachhead companion's job to
+/// monitor your containers. If it's not there, don't publish its configuration (let it expire).
+#[derive(Debug,Eq,PartialEq,Copy,Clone)]
 pub enum MissingContainerHandling {
+    /// Report inspection failures as an error
     Report,
+    /// Ignore containers that cannot be inspected.
     Ignore,
 }
 
@@ -83,17 +100,18 @@ impl Default for MissingContainerHandling {
 impl Default for Config {
     fn default() -> Config {
         Config {
-            redis_host: "localhost".to_owned(),
+            redis_host: Rc::new("localhost".to_owned()),
             redis_port: 6379,
-            key_prefix: "".to_owned(),
+            key_prefix: Rc::new("".to_owned()),
             expire_seconds: Some(60),
             refresh_seconds: Some(27),
             docker_url: Url::parse("unix://var/run/docker.sock").unwrap(),
             docker_network: false,
-            envvar: "BEACHHEAD_DOMAINS".to_owned(),
+            envvar: Rc::new("BEACHHEAD_DOMAINS".to_owned()),
             dry_run: false,
             missing_envvar: Default::default(),
             missing_container: Default::default(),
+            enumerate: false
         }
     }
 }
@@ -135,6 +153,31 @@ pub fn stay_calm_and<T, E>(result: Result<T, E>)
                 match writeln!(&mut stderr(), "Fatal error: {}", e) {
                     Err(_) => (), // ignore, nothing left to do
                     Ok(_) => (),
+                }
+            }
+            std::process::exit(100);
+        }
+    }
+}
+
+pub fn stay_very_calm_and<T, E>(result: Result<T, Vec<E>>)
+    where E: Display
+{
+    match result {
+        Ok(_) => (),
+        Err(es) => {
+            // We need errors to be shown to the user. If we can, we use the error logging
+            // mechanism. Otherwise, we just print to stderr.
+            if log_enabled!(log::LogLevel::Error) {
+                for e in es {
+                    error!("Fatal error: {}", e);
+                }
+            } else {
+                for e in es {
+                    match writeln!(&mut stderr(), "Fatal error: {}", e) {
+                        Err(_) => (), // ignore, nothing left to do
+                        Ok(_) => (),
+                    }
                 }
             }
             std::process::exit(100);

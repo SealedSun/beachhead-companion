@@ -6,9 +6,10 @@ use domain_spec::DomainSpec;
 /// Abstract interface for the component that publishes the current configuration state to whatever
 /// system needs to be informed.
 pub trait Publish {
-    fn publish_all(&mut self, publications: &[Publication]) -> Result<(), PublishingError>;
+    fn publish(&mut self, publication: &Publication) -> Result<(), PublishingError>;
 }
 
+#[derive(Debug)]
 pub struct Publication {
     pub host: String,
     pub specs: Vec<DomainSpec>,

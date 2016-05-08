@@ -26,7 +26,7 @@ impl RedisPublisher {
         if let Some(ref mut client) = self.redis_client_opt {
             Ok(client)
         } else {
-            let addr = libredis::ConnectionAddr::Tcp(self.config.redis_host.clone(),
+            let addr = libredis::ConnectionAddr::Tcp((*self.config.redis_host).clone(),
                                                      self.config.redis_port);
             let info = libredis::ConnectionInfo {
                 addr: Box::new(addr),
@@ -41,30 +41,25 @@ impl RedisPublisher {
 }
 
 impl Publish for RedisPublisher {
-    fn publish_all(&mut self, publications: &[Publication]) -> Result<(), PublishingError> {
-        if publications.is_empty() {
-            return Ok(());
-        }
-
+    fn publish(&mut self, publication: &Publication) -> Result<(), PublishingError> {
         let config = self.config.clone();
         let r_client = try!(self.create_redis_client());
 
-        for publication in publications {
-            let mut key = String::new();
-            service_key(&config, &publication.host, &mut key);
-            let key = key;
+        let mut key = String::new();
+        service_key(&config, &publication.host, &mut key);
+        let key = key;
 
-            let published_config = json_serializer::domain_configs(&publication.host,
-                                                                   &publication.specs);
-            let redis_value = try!(json::encode(&published_config));
+        let published_config = json_serializer::domain_configs(&publication.host,
+                                                               &publication.specs);
+        let redis_value = try!(json::encode(&published_config));
 
 
-            if let Some(expire_seconds) = config.expire_seconds {
-                try!(r_client.set_ex(key, redis_value, expire_seconds as usize));
-            } else {
-                try!(r_client.set(key, published_config));
-            }
+        if let Some(expire_seconds) = config.expire_seconds {
+            try!(r_client.set_ex(key, redis_value, expire_seconds as usize));
+        } else {
+            try!(r_client.set(key, published_config));
         }
+
         Ok(())
     }
 }

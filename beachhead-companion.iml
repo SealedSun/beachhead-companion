@@ -12,56 +12,56 @@
     <option name="myExternCrates">
       <list>
         <SerializableExternCrate>
-          <option name="name" value="docopt" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/docopt-0.6.78/src/lib.rs" />
-        </SerializableExternCrate>
-        <SerializableExternCrate>
-          <option name="name" value="quick_error" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/quick-error-1.0.0/src/lib.rs" />
-        </SerializableExternCrate>
-        <SerializableExternCrate>
-          <option name="name" value="rustc_serialize" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/rustc-serialize-0.3.18/src/lib.rs" />
-        </SerializableExternCrate>
-        <SerializableExternCrate>
-          <option name="name" value="chan_signal" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/chan-signal-0.1.5/src/lib.rs" />
-        </SerializableExternCrate>
-        <SerializableExternCrate>
-          <option name="name" value="shiplift" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/shiplift-0.2.1/src/lib.rs" />
-        </SerializableExternCrate>
-        <SerializableExternCrate>
-          <option name="name" value="chan" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/chan-0.1.17/src/lib.rs" />
+          <option name="name" value="url" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/url-0.5.7/src/lib.rs" />
         </SerializableExternCrate>
         <SerializableExternCrate>
           <option name="name" value="env_logger" />
           <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/env_logger-0.3.2/src/lib.rs" />
         </SerializableExternCrate>
         <SerializableExternCrate>
-          <option name="name" value="url" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/url-0.5.7/src/lib.rs" />
-        </SerializableExternCrate>
-        <SerializableExternCrate>
           <option name="name" value="redis" />
           <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/redis-0.5.2/src/lib.rs" />
-        </SerializableExternCrate>
-        <SerializableExternCrate>
-          <option name="name" value="log" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/log-0.3.5/src/lib.rs" />
         </SerializableExternCrate>
         <SerializableExternCrate>
           <option name="name" value="lazy_static" />
           <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/lazy_static-0.1.15/src/lib.rs" />
         </SerializableExternCrate>
         <SerializableExternCrate>
+          <option name="name" value="chan_signal" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/chan-signal-0.1.5/src/lib.rs" />
+        </SerializableExternCrate>
+        <SerializableExternCrate>
+          <option name="name" value="log" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/log-0.3.6/src/lib.rs" />
+        </SerializableExternCrate>
+        <SerializableExternCrate>
+          <option name="name" value="docopt" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/docopt-0.6.78/src/lib.rs" />
+        </SerializableExternCrate>
+        <SerializableExternCrate>
+          <option name="name" value="rustc_serialize" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/rustc-serialize-0.3.18/src/lib.rs" />
+        </SerializableExternCrate>
+        <SerializableExternCrate>
           <option name="name" value="chrono" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/chrono-0.2.20/src/lib.rs" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/chrono-0.2.21/src/lib.rs" />
         </SerializableExternCrate>
         <SerializableExternCrate>
           <option name="name" value="regex" />
-          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/regex-0.1.58/src/lib.rs" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/regex-0.1.62/src/lib.rs" />
+        </SerializableExternCrate>
+        <SerializableExternCrate>
+          <option name="name" value="quick_error" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/quick-error-1.0.0/src/lib.rs" />
+        </SerializableExternCrate>
+        <SerializableExternCrate>
+          <option name="name" value="chan" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/chan-0.1.17/src/lib.rs" />
+        </SerializableExternCrate>
+        <SerializableExternCrate>
+          <option name="name" value="shiplift" />
+          <option name="path" value="$USER_HOME$/.cargo/registry/src/github.com-88ac128001ac3a9a/shiplift-0.2.1/src/lib.rs" />
         </SerializableExternCrate>
       </list>
     </option>
@@ -78,17 +78,25 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Cargo: env_logger 0.3.2" level="project" />
-    <orderEntry type="library" name="Cargo: lazy_static 0.1.15" level="project" />
-    <orderEntry type="library" name="Cargo: docopt 0.6.78" level="project" />
-    <orderEntry type="library" name="Cargo: log 0.3.5" level="project" />
-    <orderEntry type="library" name="Cargo: rustc-serialize 0.3.18" level="project" />
-    <orderEntry type="library" name="Cargo: shiplift 0.2.1" level="project" />
-    <orderEntry type="library" name="Cargo: quick-error 1.0.0" level="project" />
-    <orderEntry type="library" name="Cargo: redis 0.5.2" level="project" />
-    <orderEntry type="library" name="Cargo: chrono 0.2.20" level="project" />
-    <orderEntry type="library" name="Cargo: chan-signal 0.1.5" level="project" />
-    <orderEntry type="library" name="Cargo: chan 0.1.17" level="project" />
+    <orderEntry type="library" name="Cargo: log 0.3.6" level="project" />
+    <orderEntry type="library" name="Cargo: chrono 0.2.21" level="project" />
+    <orderEntry type="library" name="Cargo: regex 0.1.62" level="project" />
     <orderEntry type="library" name="Cargo: url 0.5.7" level="project" />
-    <orderEntry type="library" name="Cargo: regex 0.1.58" level="project" />
+    <orderEntry type="library" name="Cargo: chan 0.1.17" level="project" />
+    <orderEntry type="library" name="Cargo: chan-signal 0.1.5" level="project" />
+    <orderEntry type="library" name="Cargo: redis 0.5.2" level="project" />
+    <orderEntry type="library" name="Cargo: quick-error 1.0.0" level="project" />
+    <orderEntry type="library" name="Cargo: shiplift 0.2.1" level="project" />
+    <orderEntry type="library" name="Cargo: rustc-serialize 0.3.18" level="project" />
+    <orderEntry type="library" name="Cargo: docopt 0.6.78" level="project" />
+    <orderEntry type="library" name="Cargo: lazy_static 0.1.15" level="project" />
+    <orderEntry type="library" name="Rust &lt;beachhead-companion&gt;" level="project" />
+    <orderEntry type="library" name="Cargo &lt;beachhead-companion&gt;" level="project" />
+    <orderEntry type="library" name="Cargo &lt;beachhead-companion&gt;" level="project" />
+    <orderEntry type="library" name="Cargo &lt;beachhead-companion&gt;" level="project" />
+    <orderEntry type="library" name="Cargo &lt;beachhead-companion&gt;" level="project" />
+    <orderEntry type="library" name="Cargo &lt;beachhead-companion&gt;" level="project" />
+    <orderEntry type="library" name="Cargo &lt;beachhead-companion&gt;" level="project" />
+    <orderEntry type="library" name="Cargo &lt;beachhead-companion&gt;" level="project" />
   </component>
 </module>

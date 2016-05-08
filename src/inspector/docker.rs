@@ -78,7 +78,7 @@ fn parse_container_env_vars(env_opt: &Option<Vec<String>>,
     if let Some(ref env) = *env_opt {
         for line in env.iter() {
             let parts: Vec<&str> = line.splitn(2, '=').collect();
-            if parts.len() < 2 || &parts[0] != &config.envvar {
+            if parts.len() < 2 || &parts[0] != &*config.envvar {
                 continue;
             }
             *envvar_present = true;

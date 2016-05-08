@@ -1,8 +1,9 @@
 
 use std::env;
 use std::sync::Arc;
+use std::rc::Rc;
 
-use common::{stay_calm_and, Config, MissingContainerHandling, MissingEnvVarHandling};
+use common::{stay_calm_and, stay_very_calm_and, Config, MissingContainerHandling, MissingEnvVarHandling};
 
 extern crate docopt;
 extern crate regex;
@@ -25,6 +26,7 @@ extern crate lazy_static;
 
 use url::Url;
 use docopt::Docopt;
+use chan_signal::Signal;
 
 #[macro_use]
 mod common;
@@ -64,14 +66,14 @@ Options:
                         on each refresh (containers can come and go)
     --error-missing-envvar
                         Consider `envvar` missing on a container an error. Automatically enabled
-                        for containers that are listed eplicitly unless --ignore-missing-envvar
+                        for containers that are listed explicitly unless --ignore-missing-envvar
                         is present.
     --ignore-missing-envvar
                         Ignore missing `envvar` environment variables. Automatically enabled on
-                        containers that are not explicityly listed unless --error-missing-envvar
+                        containers that are not explicitly listed unless --error-missing-envvar
                         is present.
     --error-missing-container
-                        Consider an explicityly listed container that is missing/not running an
+                        Consider an explicitly listed container that is missing/not running an
                         error. Defaults to false as it isn't really beachhead-companion's job
                         to monitor your containers.
     -n, --dry-run       Don't update registrations, just check container status and configuration.
@@ -132,6 +134,7 @@ struct Args {
 // That way, the defaults are only stated once (in the USAGE)
 impl Default for Args {
     fn default() -> Args {
+        // We use the enumerate form of the command and then strip the enumerate flag away again.
         let argv = vec!["beachhead-companion", "--enumerate"];
         let mut args: Args = DOCOPT.clone().argv(argv).decode().unwrap();
         args.flag_enumerate = false;
@@ -140,13 +143,14 @@ impl Default for Args {
 }
 
 impl Args {
-    fn into_config(self) -> Config {
-        Config {
-            redis_host: self.flag_redis_host,
+    fn deconstruct(self) -> (Config,Vec<String>) {
+        let config = Config {
+            redis_host: Rc::new(self.flag_redis_host),
             redis_port: self.flag_redis_port,
-            key_prefix: self.flag_key_prefix,
+            key_prefix: Rc::new(self.flag_key_prefix),
             docker_url: self.flag_docker_url,
-            envvar: self.flag_envvar,
+            enumerate: self.flag_enumerate,
+            envvar: Rc::new(self.flag_envvar),
             dry_run: self.flag_dry_run,
             expire_seconds: if self.flag_expire == 0 {
                 None
@@ -174,8 +178,9 @@ impl Args {
                 MissingContainerHandling::Report
             } else {
                 MissingContainerHandling::Ignore
-            },
-        }
+            }
+        };
+        (config, self.arg_containers)
     }
 }
 
@@ -208,10 +213,16 @@ fn main() {
     args_transform(&mut args);
 
     stay_calm_and(init_log(&args));
-    let mut containers = Vec::with_capacity(args.arg_containers.len());
-    containers.append(&mut args.arg_containers);
-    let config = Arc::new(args.into_config());
-    stay_calm_and(companion::main(config, containers));
+    let (config, arg_containers) = args.deconstruct();
+    let config = Arc::new(config);
+    let mut containers = Vec::with_capacity(arg_containers.len());
+    containers.extend(arg_containers.into_iter().map(|x| Rc::new(x)));
+    let abort_signal = chan_signal::notify(&[Signal::INT, Signal::TERM]);
+    let docker_inspector = Box::new(inspector::docker::DockerInspector::new(config.clone()));
+    let redis_publisher = Box::new(publisher::redis::RedisPublisher::new(config.clone()));
+
+    stay_very_calm_and(companion::run(
+        config, docker_inspector, redis_publisher, abort_signal, &containers));
 }
 
 /// Handles the verbosity options by initializing the logger accordingly.

@@ -15,7 +15,7 @@ pub struct Inspection {
 
 pub mod docker;
 
-// ############### INSPECTION ERROR #######################
+    // ############### INSPECTION ERROR #######################
 
 #[derive(Debug)]
 pub struct InspectionError {
