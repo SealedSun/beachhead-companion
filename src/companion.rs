@@ -312,3 +312,21 @@ quick_error! {
         }
     }
 }
+
+// ############### TESTS ##################################
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use common::{self, Config};
+
+    #[test]
+    fn empty() {
+        common::init_log();
+        // #### GIVEN ####
+
+
+        // #### WHEN  ####
+
+        // #### THEN  ####
+    }
+}

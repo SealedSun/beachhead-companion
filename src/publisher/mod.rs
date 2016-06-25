@@ -9,13 +9,14 @@ pub trait Publish {
     fn publish(&mut self, publication: &Publication) -> Result<(), PublishingError>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Publication {
     pub host: String,
     pub specs: Vec<DomainSpec>,
 }
 
 pub mod redis;
+pub mod mock_publisher;
 mod json_serializer;
 
 // ############### PUBLISHING ERROR #######################

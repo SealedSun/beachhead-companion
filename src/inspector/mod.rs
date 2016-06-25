@@ -7,6 +7,7 @@ pub trait Inspect {
     fn inspect(&mut self, container_name: &str) -> Result<Inspection, InspectionError>;
 }
 
+#[derive(Debug)]
 pub struct Inspection {
     pub host: String,
     pub specs: Vec<DomainSpec>,
@@ -14,6 +15,7 @@ pub struct Inspection {
 }
 
 pub mod docker;
+pub mod mock_inspector;
 
 // ############### INSPECTION ERROR #######################
 
@@ -42,5 +44,11 @@ pub trait InspectionInnerError: Error {}
 impl<T: InspectionInnerError + 'static> From<T> for InspectionError {
     fn from(val: T) -> InspectionError {
         InspectionError { inner: Box::new(val) }
+    }
+}
+
+impl From<Box<InspectionInnerError>> for InspectionError {
+    fn from(val: Box<InspectionInnerError>) -> InspectionError {
+        InspectionError { inner: val }
     }
 }

@@ -362,7 +362,7 @@ mod test {
         let args_expire = args.flag_expire;
 
         // #### WHEN  ####
-        let config = args.into_config();
+        let (config, _) = args.deconstruct();
 
         // #### THEN  ####
         assert_eq!(config.expire_seconds, Some(args_expire));
