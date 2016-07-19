@@ -92,6 +92,13 @@ fn parse_container_env_vars(env_opt: &Option<Vec<String>>,
 
 impl InspectionInnerError for domain_spec::DomainSpecError {}
 
+
+impl From<Box<domain_spec::DomainSpecError>> for InspectionError {
+    fn from(val: Box<domain_spec::DomainSpecError>) -> InspectionError {
+        InspectionError { inner: Box::new(val) }
+    }
+}
+
 #[derive(Debug)]
 struct ShipliftError {
     actual: shiplift::errors::Error,
@@ -109,6 +116,12 @@ impl Error for ShipliftError {
 impl Display for ShipliftError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "{} Details: {:?}", self.description(), self.actual)
+    }
+}
+
+impl From<Box<ShipliftError>> for InspectionError {
+    fn from(val: Box<ShipliftError>) -> InspectionError {
+        InspectionError { inner: Box::new(*val) }
     }
 }
 

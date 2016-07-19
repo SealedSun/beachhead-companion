@@ -1,17 +1,14 @@
-use std::sync::Arc;
 use std::fmt::{self, Display, Debug};
 use std::error::Error;
 use std::convert::From;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use common::Config;
-use domain_spec::{self, DomainSpec};
 use super::*;
 
 pub struct MockInspector {
-    pub enumerate_result: Result<Vec<String>, Box<Fn() -> Box<InspectionInnerError>>>,
-    pub inspect_results: HashMap<Rc<String>, Result<Inspection, InspectionError>>
+    pub enumerate_result: Result<Vec<String>, Box<Fn() -> InspectionError>>,
+    pub inspect_results: HashMap<Rc<String>, Result<Inspection, Box<Fn() -> InspectionError>>>
 }
 
 impl Debug for MockInspector {
@@ -27,9 +24,22 @@ impl Debug for MockInspector {
                 try!(write!(f, "Err(*)"));
             }
         }
-        try!(write!(f, ", inspect_results: "));
-        try!(Debug::fmt(&self.inspect_results,f));
-        write!(f, " }}")
+        try!(write!(f, ", inspect_results: ["));
+        for inspect_result in self.inspect_results.iter() {
+            let (k,v) = inspect_result;
+            try!(write!(f, " {} => ", k));
+            match v {
+                &Ok(ref result) => {
+                    try!(write!(f, "Ok("));
+                    try!(Debug::fmt(result, f));
+                    try!(write!(f,") "));
+                },
+                _ => {
+                    try!(write!(f, "Err(*) "));
+                }
+            }
+        }
+        write!(f, "] }}")
     }
 }
 
@@ -40,18 +50,22 @@ impl MockInspector {
 }
 
 impl Default for MockInspector {
-    pub fn default() -> MockInspector {
+    fn default() -> MockInspector {
         MockInspector::new()
     }
 }
 
 impl Inspect for MockInspector {
     fn enumerate(&mut self, container_names: &mut Vec<String>) -> Result<(), InspectionError> {
-        self.enumerate_result.as_ref().map(|v| container_names.extend_from_slice(&v)).map_err(|b| From::from(b()))
+        self.enumerate_result.as_ref().map(|v| container_names.extend_from_slice(&v)).map_err(|b| b())
     }
     fn inspect(&mut self, container_name: &str) -> Result<Inspection, InspectionError> {
-        self.inspect_results.get(container_name)
-            .ok_or_else(|| InspectionNotMocked { container_name: container_name.to_string() })
+        let my_container_name = Rc::new(container_name.to_owned());
+        match self.inspect_results.get(&my_container_name) {
+            None => Err(From::from(InspectionNotMocked { container_name: container_name.to_string() })),
+            Some(&Ok(ref i)) => Ok(i.clone()),
+            Some(&Err(ref f)) => Err(f())
+        }
     }
 }
 
@@ -76,3 +90,9 @@ impl Display for InspectionNotMocked {
 }
 
 impl InspectionInnerError for InspectionNotMocked {}
+
+impl From<Box<InspectionNotMocked>> for InspectionError {
+    fn from(val: Box<InspectionNotMocked>) -> InspectionError {
+        InspectionError { inner: Box::new(*val) }
+    }
+}
