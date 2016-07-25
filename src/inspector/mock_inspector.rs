@@ -69,8 +69,10 @@ impl Inspect for MockInspector {
     }
 }
 
+/// Error that gets thrown when there is no mock data for a particular container name.
 #[derive(Debug)]
 pub struct InspectionNotMocked {
+    /// The name of the container that the mock inspector was trying to look up.
     pub container_name: String
 }
 
@@ -93,6 +95,25 @@ impl InspectionInnerError for InspectionNotMocked {}
 
 impl From<Box<InspectionNotMocked>> for InspectionError {
     fn from(val: Box<InspectionNotMocked>) -> InspectionError {
+        InspectionError { inner: Box::new(*val) }
+    }
+}
+
+/// An error dedicated to test error handling code paths.
+#[derive(Debug)]
+pub struct FakeError;
+impl Error for FakeError {
+    fn description(&self) -> &str { "Fake error." }
+    fn cause(&self) -> Option<&Error> { None }
+}
+impl Display for FakeError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{}", self.description())
+    }
+}
+impl InspectionInnerError for FakeError {}
+impl From<Box<FakeError>> for InspectionError {
+    fn from(val: Box<FakeError>) -> InspectionError {
         InspectionError { inner: Box::new(*val) }
     }
 }

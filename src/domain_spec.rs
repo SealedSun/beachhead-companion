@@ -82,7 +82,9 @@ impl DomainSpec {
                         spec.https_port = Some(parsed_port_opt.unwrap_or(443));
                     }
                     _ => {
-                        warn!("Unknown domain spec parameter ");
+                        // Forwards compatibility: don't treat unknown parameters as errors.
+                        warn!("Unknown domain spec parameter. Parameter name: '{}' value: {:?}",
+                              key, value);
                     }
                 }
             }

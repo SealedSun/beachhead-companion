@@ -35,7 +35,6 @@ pub struct Config {
     /// The prefix for the keys to insert into redis. Will be followed by the container name.
     pub key_prefix: Rc<String>,
     /// The expiration for registrations in seconds. None means no expiration.
-    /// If there is some expiration
     pub expire_seconds: Option<u32>,
     /// The refresh interval for registrations in seconds. None means no refresh,
     /// only set once.
@@ -130,6 +129,14 @@ pub fn init_log() {
     }
 }
 
+/// Turn an optional result into a result of an optional value.
+///
+/// # Examples
+/// ```
+/// assert_eq!(optional_result(Some(Ok(1))),       Ok(Some(1)) );
+/// assert_eq!(optional_result(Some(Err("fail"))), Err("fail") );
+/// assert_eq!(optional_result(None),              Ok(None)    );
+/// ```
 pub fn optional_result<R, E>(x_opt: Option<Result<R, E>>) -> Result<Option<R>, E> {
     match x_opt {
         Some(Ok(x)) => Ok(Some(x)),
@@ -139,6 +146,7 @@ pub fn optional_result<R, E>(x_opt: Option<Result<R, E>>) -> Result<Option<R>, E
 }
 
 /// Display errors a bit more nicely, depending on whether logging is enabled or not.
+/// This variant accepts Error results with a single error value.
 pub fn stay_calm_and<T, E>(result: Result<T, E>)
     where E: Display
 {
@@ -160,6 +168,8 @@ pub fn stay_calm_and<T, E>(result: Result<T, E>)
     }
 }
 
+/// Display errors a bit more nicely, depending on whether logging is enabled or not.
+/// This variant accepts Error results with multiple error values.
 pub fn stay_very_calm_and<T, E>(result: Result<T, Vec<E>>)
     where E: Display
 {
@@ -200,5 +210,13 @@ mod tests {
         // #### THEN  ####
         // no panic
         assert!(config.expire_seconds.is_some());
+    }
+
+    #[test]
+    fn optional_result_full() {
+        init_log();
+        assert_eq!(optional_result::<&str, &str>(Some(Ok("ok"))),    Ok(Some("ok")) );
+        assert_eq!(optional_result::<&str, &str>(Some(Err("fail"))), Err("fail") );
+        assert_eq!(optional_result::<&str, &str>(None),              Ok(None)    );
     }
 }

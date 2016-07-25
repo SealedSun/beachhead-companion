@@ -16,6 +16,7 @@ pub struct Publication {
 }
 
 pub mod redis;
+#[cfg(test)]
 pub mod mock_publisher;
 mod json_serializer;
 

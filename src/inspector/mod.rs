@@ -15,6 +15,7 @@ pub struct Inspection {
 }
 
 pub mod docker;
+#[cfg(test)]
 pub mod mock_inspector;
 
 // ############### INSPECTION ERROR #######################
