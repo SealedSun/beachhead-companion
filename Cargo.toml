@@ -8,8 +8,6 @@ keywords = ["docker", "redis", "discovery", "service"]
 license = "MIT"
 
 [dependencies]
-# Redis client library.
-redis = "^0.5.3"
 
 # Library for communicating with the docker daemon.
 shiplift = "^0.2"
@@ -40,7 +38,7 @@ chan = "^0.1.17"
 chan-signal = "^0.1.6"
 
 # To initialize Regex patterns
-lazy_static = "^0.1.15"
+lazy_static = "0.2.1"
 
 # Need to fix this as <0.2.3 because that bumped the url dependecy up
 cookie = "=0.2.2"
@@ -49,3 +47,8 @@ cookie = "=0.2.2"
 [dependencies.url]
 version = "^0.5.9"
 features = [ "rustc-serialize" ]
+
+# Redis client library (with rustc-serialize support)
+[dependencies.redis]
+version = "^0.7"
+features = [ "with-rustc-json" ]
