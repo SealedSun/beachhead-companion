@@ -3,38 +3,31 @@ use std::env;
 use std::sync::Arc;
 use std::rc::Rc;
 
-use common::{stay_calm_and, stay_very_calm_and, Config, MissingContainerHandling,
-             MissingEnvVarHandling};
-
 extern crate docopt;
-extern crate regex;
-extern crate redis;
-extern crate shiplift;
-extern crate env_logger;
-extern crate chrono;
+extern crate libbeachheadcompanion;
+
+use libbeachheadcompanion::common::{stay_calm_and, stay_very_calm_and, Config, MissingContainerHandling,
+    MissingEnvVarHandling};
+use libbeachheadcompanion::inspector;
+use libbeachheadcompanion::publisher;
+use libbeachheadcompanion::companion;
+
 extern crate rustc_serialize;
 extern crate url;
 extern crate chan_signal;
+extern crate chrono;
+extern crate env_logger;
 
 #[macro_use]
 extern crate log;
 #[macro_use]
 extern crate chan;
 #[macro_use]
-extern crate quick_error;
-#[macro_use]
 extern crate lazy_static;
 
 use url::Url;
 use docopt::Docopt;
 use chan_signal::Signal;
-
-#[macro_use]
-mod common;
-mod domain_spec;
-mod inspector;
-mod publisher;
-mod companion;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 const USAGE: &'static str = "
@@ -105,10 +98,8 @@ See http://rust-lang-nursery.github.io/log/env_logger for details.
 
 lazy_static! {
     static ref DOCOPT: Docopt = Docopt::new(USAGE).expect("docopt failed to parse USAGE")
-        .help(true).version(Some(String::from(VERSION)));
+        .help(true).version(Some(String::from(libbeachheadcompanion::VERSION)));
 }
-
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// Holds arguments parsed by [docopt]. Will be transferred into [common/Config].
 #[derive(RustcDecodable, Clone)]
@@ -257,7 +248,7 @@ fn init_log(args: &Args) -> Result<(), log::SetLoggerError> {
 mod test {
     use super::{USAGE, args_transform, Args};
     use docopt;
-    use common;
+    use libbeachheadcompanion::common;
 
     #[test]
     fn docopt_spec() {

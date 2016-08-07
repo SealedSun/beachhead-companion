@@ -91,5 +91,6 @@ mod tests {
         RedisPublisher::new(cfg.clone());
 
         // #### THEN  ####
+        // doesn't panic
     }
 }

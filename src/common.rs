@@ -115,7 +115,6 @@ impl Default for Config {
     }
 }
 
-#[cfg(test)]
 pub fn init_log() {
     use env_logger;
     lazy_static! {
@@ -133,9 +132,10 @@ pub fn init_log() {
 ///
 /// # Examples
 /// ```
-/// assert_eq!(optional_result(Some(Ok(1))),       Ok(Some(1)) );
-/// assert_eq!(optional_result(Some(Err("fail"))), Err("fail") );
-/// assert_eq!(optional_result(None),              Ok(None)    );
+/// # use libbeachheadcompanion::common::optional_result;
+/// assert_eq!(optional_result::<i32,i32>(Some(Ok(2))),       Ok(Some(2)) );
+/// assert_eq!(optional_result::<&str,&str>(Some(Err("fail"))), Err("fail") );
+/// assert_eq!(optional_result::<i32,i32>(None),              Ok(None)    );
 /// ```
 pub fn optional_result<R, E>(x_opt: Option<Result<R, E>>) -> Result<Option<R>, E> {
     match x_opt {

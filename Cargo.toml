@@ -6,9 +6,17 @@ repository = "https://github.com/SealedSun/beachhead-companion"
 readme = "README.md"
 keywords = ["docker", "redis", "discovery", "service"]
 license = "MIT"
+publish = false
+
+[lib]
+name = "libbeachheadcompanion"
+path = "src/lib.rs"
+
+[[bin]]
+name = "beachhead-companion"
+path = "src/main.rs"
 
 [dependencies]
-
 # Library for communicating with the docker daemon.
 shiplift = "^0.2"
 
@@ -52,3 +60,6 @@ features = [ "rustc-serialize" ]
 [dependencies.redis]
 version = "^0.7"
 features = [ "with-rustc-json" ]
+
+[dev-dependencies.net2]
+version = "0.2"

@@ -19,6 +19,8 @@ pub mod redis;
 #[cfg(test)]
 pub mod mock_publisher;
 mod json_serializer;
+#[cfg(test)]
+mod test_redis_publisher;
 
 // ############### PUBLISHING ERROR #######################
 
