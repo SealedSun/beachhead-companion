@@ -190,14 +190,15 @@ fn test_domains() {
     let publication = Publication {
         host: "example.com".to_owned(),
         specs: vec![DomainSpec {
-            domain_name: "www.example.com".to_owned(),
-            http_port: Some(81),
-            https_port: Some(444),
-        }, DomainSpec {
-            domain_name: "admin.example.com".to_owned(),
-            http_port: None,
-            https_port: Some(8443),
-        }]
+                        domain_name: "www.example.com".to_owned(),
+                        http_port: Some(81),
+                        https_port: Some(444),
+                    },
+                    DomainSpec {
+                        domain_name: "admin.example.com".to_owned(),
+                        http_port: None,
+                        https_port: Some(8443),
+                    }],
     };
 
     // #### WHEN  ####
@@ -247,14 +248,15 @@ fn test_domains_update() {
     let mut publication = Publication {
         host: "example.com".to_owned(),
         specs: vec![DomainSpec {
-            domain_name: "www.example.com".to_owned(),
-            http_port: Some(81),
-            https_port: Some(444),
-        }, DomainSpec {
-            domain_name: "admin.example.com".to_owned(),
-            http_port: None,
-            https_port: Some(8443),
-        }]
+                        domain_name: "www.example.com".to_owned(),
+                        http_port: Some(81),
+                        https_port: Some(444),
+                    },
+                    DomainSpec {
+                        domain_name: "admin.example.com".to_owned(),
+                        http_port: None,
+                        https_port: Some(8443),
+                    }],
     };
 
     // #### WHEN  ####
@@ -310,26 +312,28 @@ fn test_domains_multi_host() {
     let other_publication = Publication {
         host: "example.org".to_owned(),
         specs: vec![DomainSpec {
-            domain_name: "www.example.org".to_owned(),
-            http_port: Some(83),
-            https_port: Some(446),
-        }, DomainSpec {
-            domain_name: "admin.example.org".to_owned(),
-            http_port: None,
-            https_port: Some(8448),
-        }]
+                        domain_name: "www.example.org".to_owned(),
+                        http_port: Some(83),
+                        https_port: Some(446),
+                    },
+                    DomainSpec {
+                        domain_name: "admin.example.org".to_owned(),
+                        http_port: None,
+                        https_port: Some(8448),
+                    }],
     };
     let publication = Publication {
         host: "example.com".to_owned(),
         specs: vec![DomainSpec {
-            domain_name: "www.example.com".to_owned(),
-            http_port: Some(81),
-            https_port: Some(444),
-        }, DomainSpec {
-            domain_name: "admin.example.com".to_owned(),
-            http_port: None,
-            https_port: Some(8443),
-        }]
+                        domain_name: "www.example.com".to_owned(),
+                        http_port: Some(81),
+                        https_port: Some(444),
+                    },
+                    DomainSpec {
+                        domain_name: "admin.example.com".to_owned(),
+                        http_port: None,
+                        https_port: Some(8443),
+                    }],
     };
 
     // #### WHEN  ####
@@ -384,26 +388,28 @@ fn test_domains_multi_host2() {
     let other_publication = Publication {
         host: "example.org".to_owned(),
         specs: vec![DomainSpec {
-            domain_name: "www.example.org".to_owned(),
-            http_port: Some(83),
-            https_port: Some(446),
-        }, DomainSpec {
-            domain_name: "admin.example.org".to_owned(),
-            http_port: None,
-            https_port: Some(8448),
-        }]
+                        domain_name: "www.example.org".to_owned(),
+                        http_port: Some(83),
+                        https_port: Some(446),
+                    },
+                    DomainSpec {
+                        domain_name: "admin.example.org".to_owned(),
+                        http_port: None,
+                        https_port: Some(8448),
+                    }],
     };
     let publication = Publication {
         host: "example.com".to_owned(),
         specs: vec![DomainSpec {
-            domain_name: "www.example.com".to_owned(),
-            http_port: Some(81),
-            https_port: Some(444),
-        }, DomainSpec {
-            domain_name: "admin.example.com".to_owned(),
-            http_port: None,
-            https_port: Some(8443),
-        }]
+                        domain_name: "www.example.com".to_owned(),
+                        http_port: Some(81),
+                        https_port: Some(444),
+                    },
+                    DomainSpec {
+                        domain_name: "admin.example.com".to_owned(),
+                        http_port: None,
+                        https_port: Some(8443),
+                    }],
     };
 
     // #### WHEN  ####
@@ -459,10 +465,10 @@ fn test_domain_id() {
     let publication = Publication {
         host: "example.com".to_owned(),
         specs: vec![DomainSpec {
-            domain_name: "admin-2.ex-ample.com".to_owned(),
-            http_port: Some(80),
-            https_port: None
-        }]
+                        domain_name: "admin-2.ex-ample.com".to_owned(),
+                        http_port: Some(80),
+                        https_port: None,
+                    }],
     };
 
     // #### WHEN  ####
@@ -489,8 +495,12 @@ fn test_domain_id() {
 
     for rawspec in specs {
         let (id, _) = parse_domain_config(rawspec, "example.com");
-        assert!(!id.contains("."), "The domain id must not contain dots: {}", id);
-        assert!(!id.contains("-"), "The domain id must not contain dashes: {}", id);
+        assert!(!id.contains("."),
+                "The domain id must not contain dots: {}",
+                id);
+        assert!(!id.contains("-"),
+                "The domain id must not contain dashes: {}",
+                id);
     }
 }
 
@@ -511,10 +521,10 @@ fn test_ttl_no_expire() {
     let publication = Publication {
         host: "example.com".to_owned(),
         specs: vec![DomainSpec {
-            domain_name: "admin.example.com".to_owned(),
-            http_port: Some(80),
-            https_port: None
-        }]
+                        domain_name: "admin.example.com".to_owned(),
+                        http_port: Some(80),
+                        https_port: None,
+                    }],
     };
 
     // #### WHEN  ####
@@ -530,7 +540,7 @@ fn test_ttl_no_expire() {
 
     let effective_key = keys.into_iter().next().unwrap();
     let rcon = tc.client.get_connection().unwrap();
-    let ttl : i64 = redis::cmd("TTL").arg(effective_key).query(&rcon).unwrap();
+    let ttl: i64 = redis::cmd("TTL").arg(effective_key).query(&rcon).unwrap();
     // -1: no expiration (but key definitely exists)
     // -2: expired (really: "key does not exist")
 
@@ -554,10 +564,10 @@ fn test_ttl_expire() {
     let publication = Publication {
         host: "example.com".to_owned(),
         specs: vec![DomainSpec {
-            domain_name: "admin.example.com".to_owned(),
-            http_port: Some(80),
-            https_port: None
-        }]
+                        domain_name: "admin.example.com".to_owned(),
+                        http_port: Some(80),
+                        https_port: None,
+                    }],
     };
 
     // #### WHEN  ####
@@ -573,70 +583,111 @@ fn test_ttl_expire() {
 
     let effective_key = keys.into_iter().next().unwrap();
     let rcon = tc.client.get_connection().unwrap();
-    let ttl : i64 = redis::cmd("TTL").arg(effective_key).query(&rcon).unwrap();
+    let ttl: i64 = redis::cmd("TTL").arg(effective_key).query(&rcon).unwrap();
     // -1: no expiration (but key definitely exists)
     // -2: expired (really: "key does not exist")
 
     // The program should be fast enough so that this counter hasn't been decremented
     let expected_ttl = config.expire_seconds.unwrap() as i64;
-    assert!(ttl == expected_ttl || ttl == expected_ttl-1,
-        "TTL of the config entry is expected to be close to {}. Was: {}", expected_ttl, ttl );
+    assert!(ttl == expected_ttl || ttl == expected_ttl - 1,
+            "TTL of the config entry is expected to be close to {}. Was: {}",
+            expected_ttl,
+            ttl);
 }
 
 fn parse_domain_config(raw_domain_config: &Json, expected_host: &str) -> (String, DomainSpec) {
     use publisher::json_serializer::*;
 
-    assert!(raw_domain_config.is_object(), "Expected domain configuration element to be a JSON object. Was {:?}", raw_domain_config);
+    assert!(raw_domain_config.is_object(),
+            "Expected domain configuration element to be a JSON object. Was {:?}",
+            raw_domain_config);
     let raw_domain_config = raw_domain_config.as_object().unwrap();
 
     // ID
     let id = raw_domain_config.get(JSON_ID);
-    assert!(id.is_some(), "expected {} field in {:#?}", JSON_ID, raw_domain_config);
+    assert!(id.is_some(),
+            "expected {} field in {:#?}",
+            JSON_ID,
+            raw_domain_config);
     let id = id.unwrap();
-    assert!(id.is_string(), "expected {} field to be a string in {:#?}", JSON_ID, raw_domain_config);
+    assert!(id.is_string(),
+            "expected {} field to be a string in {:#?}",
+            JSON_ID,
+            raw_domain_config);
     let id = id.as_string().unwrap().to_owned();
 
     // DOMAIN
     let domain = raw_domain_config.get(JSON_DOMAIN);
-    assert!(domain.is_some(), "expected {} field in {:#?}", JSON_DOMAIN, raw_domain_config);
+    assert!(domain.is_some(),
+            "expected {} field in {:#?}",
+            JSON_DOMAIN,
+            raw_domain_config);
     let domain = domain.unwrap();
-    assert!(domain.is_string(), "expected {} field to be a string. Parent: {:#?}", JSON_DOMAIN, raw_domain_config);
+    assert!(domain.is_string(),
+            "expected {} field to be a string. Parent: {:#?}",
+            JSON_DOMAIN,
+            raw_domain_config);
     let domain = domain.as_string().unwrap().to_owned();
 
     // HTTP
     let http = parse_host_config(raw_domain_config, JSON_HTTP, expected_host);
     let https = parse_host_config(raw_domain_config, JSON_HTTPS, expected_host);
 
-    (id, DomainSpec{
+    (id,
+     DomainSpec {
         domain_name: domain,
         http_port: http,
         https_port: https,
     })
 }
 
-fn parse_host_config(raw_domain_config: &json::Object, protocol_key: &str, expected_host: &str) -> Option<u16> {
+fn parse_host_config(raw_domain_config: &json::Object,
+                     protocol_key: &str,
+                     expected_host: &str)
+                     -> Option<u16> {
     use publisher::json_serializer::*;
     use ::std;
-    if let Some(protocol_config) = raw_domain_config.get(protocol_key ) {
-        assert!(protocol_config.is_object(), "Expected {} field to be an object. Parent: {:#?}", protocol_key, raw_domain_config);
-        let protocol_config : &json::Object = protocol_config.as_object().unwrap();
+    if let Some(protocol_config) = raw_domain_config.get(protocol_key) {
+        assert!(protocol_config.is_object(),
+                "Expected {} field to be an object. Parent: {:#?}",
+                protocol_key,
+                raw_domain_config);
+        let protocol_config: &json::Object = protocol_config.as_object().unwrap();
 
         // HOST
         let host = protocol_config.get(JSON_HOST);
-        assert!(host.is_some(), "Expected {} field in {} config: {:#?}.", JSON_HOST, protocol_key, raw_domain_config);
+        assert!(host.is_some(),
+                "Expected {} field in {} config: {:#?}.",
+                JSON_HOST,
+                protocol_key,
+                raw_domain_config);
         let host = host.unwrap();
-        assert!(host.is_string(), "Expected {} field in {} config to be a string. Was: {:?}", JSON_HOST, protocol_key, host);
+        assert!(host.is_string(),
+                "Expected {} field in {} config to be a string. Was: {:?}",
+                JSON_HOST,
+                protocol_key,
+                host);
         let host = host.as_string().unwrap();
         assert_eq!(host, expected_host);
 
         // PORT
         let port = protocol_config.get(JSON_PORT);
-        assert!(port.is_some(), "Expected {} field in {} config: {:#?}", JSON_PORT, protocol_key, raw_domain_config);
+        assert!(port.is_some(),
+                "Expected {} field in {} config: {:#?}",
+                JSON_PORT,
+                protocol_key,
+                raw_domain_config);
         let port = port.unwrap();
         // is_i64 is too exact. Just check if it is convertible
-        assert!(port.as_i64().is_some(), "Expected {} field in {} config to be a string. Was: {:?}", JSON_PORT, protocol_key, port);
+        assert!(port.as_i64().is_some(),
+                "Expected {} field in {} config to be a string. Was: {:?}",
+                JSON_PORT,
+                protocol_key,
+                port);
         let port = port.as_i64().unwrap();
-        assert!(0 < port && port <= std::u16::MAX as i64, "Port number must be a 16bit unsigned integer. Was {}", port);
+        assert!(0 < port && port <= std::u16::MAX as i64,
+                "Port number must be a 16bit unsigned integer. Was {}",
+                port);
         Some(port as u16)
     } else {
         None
