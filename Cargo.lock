@@ -15,7 +15,7 @@ dependencies = [
  "redis 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.1.73 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
- "shiplift 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "shiplift 0.2.1 (git+https://github.com/softprops/shiplift.git)",
  "url 0.5.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -449,7 +449,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "shiplift"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
+source = "git+https://github.com/softprops/shiplift.git#72afaaa6ec493dbfc4c2f7b4ecc5c7f4ee0669d2"
 dependencies = [
  "flate2 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",

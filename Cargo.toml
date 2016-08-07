@@ -17,9 +17,6 @@ name = "beachhead-companion"
 path = "src/main.rs"
 
 [dependencies]
-# Library for communicating with the docker daemon.
-shiplift = "^0.2"
-
 # Used to parse domain specifications in container config.
 regex = "^0.1.55"
 
@@ -60,6 +57,11 @@ features = [ "rustc-serialize" ]
 [dependencies.redis]
 version = "^0.7"
 features = [ "with-rustc-json" ]
+
+# Library for communicating with the docker daemon.
+[dependencies.shiplift]
+#version = "^0.2"
+git = "https://github.com/softprops/shiplift.git"
 
 [dev-dependencies.net2]
 version = "0.2"
