@@ -238,6 +238,7 @@ fn init_log(args: &Args) -> Result<(), log::SetLoggerError> {
         (_, true) => log::LogLevelFilter::Warn,
     };
     log_builder.filter(Some("beachhead-companion"), level);
+    log_builder.filter(Some("libbeachheadcompanion"), level);
     if let Ok(rust_log) = env::var("RUST_LOG") {
         log_builder.parse(&rust_log);
     }
