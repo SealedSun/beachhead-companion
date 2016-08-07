@@ -215,8 +215,10 @@ mod tests {
     #[test]
     fn optional_result_full() {
         init_log();
-        assert_eq!(optional_result::<&str, &str>(Some(Ok("ok"))),    Ok(Some("ok")) );
-        assert_eq!(optional_result::<&str, &str>(Some(Err("fail"))), Err("fail") );
-        assert_eq!(optional_result::<&str, &str>(None),              Ok(None)    );
+        assert_eq!(optional_result::<&str, &str>(Some(Ok("ok"))),
+                   Ok(Some("ok")));
+        assert_eq!(optional_result::<&str, &str>(Some(Err("fail"))),
+                   Err("fail"));
+        assert_eq!(optional_result::<&str, &str>(None), Ok(None));
     }
 }

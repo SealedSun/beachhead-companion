@@ -178,7 +178,8 @@ pub fn run(config: Arc<Config>,
 /// be appended to the `errors` list.
 /// Unless you are interested whether a *particular* refresh was successful, you don't need
 /// to do anything with these error values (they have already been logged).
-fn refresh_container(name: Pending<Rc<String>>, errors: &mut Vec<CompanionError>,
+fn refresh_container(name: Pending<Rc<String>>,
+                     errors: &mut Vec<CompanionError>,
                      ctx: &mut Context) {
     let current_container = name.todo.clone();
     let was_explicit = name.explicit;
@@ -374,15 +375,16 @@ mod tests {
         let mut cfg = Config::default();
         cfg.refresh_seconds = None;
         let mut ctx = Context::new(Arc::new(cfg),
-                               Box::new(MockInspector::default()),
-                               Box::new(MockPublisher::default()),
-                               term_recv);
+                                   Box::new(MockInspector::default()),
+                                   Box::new(MockPublisher::default()),
+                                   term_recv);
 
         // #### WHEN  ####
         let do_continue = ctx.wait();
 
         // #### THEN  ####
-        assert!(!do_continue, "One shot companion context tried to run more than once.");
+        assert!(!do_continue,
+                "One shot companion context tried to run more than once.");
     }
 
     #[test]
@@ -402,8 +404,9 @@ mod tests {
         let do_continue = ctx.wait();
 
         // #### THEN  ####
-        assert!(!do_continue, concat!("Companion context tried to run after ",
-                                              "termination was requested."));
+        assert!(!do_continue,
+                concat!("Companion context tried to run after ",
+                        "termination was requested."));
     }
 
     #[test]
@@ -423,8 +426,9 @@ mod tests {
         let do_continue = ctx.wait();
 
         // #### THEN  ####
-        assert!(!do_continue, concat!("Companion context tried to run after ",
-                                              "termination was requested."));
+        assert!(!do_continue,
+                concat!("Companion context tried to run after ",
+                        "termination was requested."));
     }
 
     #[test]
@@ -469,8 +473,14 @@ mod tests {
         assert_eq!(pendings.len(), 2);
         assert_eq!(pendings[0].explicit, true);
         assert_eq!(pendings[1].explicit, true);
-        assert!(pendings.iter().any(|p| p.todo == alpha), "{} not found in {:?}", alpha, pendings);
-        assert!(pendings.iter().any(|p| p.todo == beta), "{} not found in {:?}", beta, pendings);
+        assert!(pendings.iter().any(|p| p.todo == alpha),
+                "{} not found in {:?}",
+                alpha,
+                pendings);
+        assert!(pendings.iter().any(|p| p.todo == beta),
+                "{} not found in {:?}",
+                beta,
+                pendings);
     }
 
     #[test]
@@ -498,8 +508,14 @@ mod tests {
         assert_eq!(pendings.len(), 2);
         assert_eq!(pendings[0].explicit, false);
         assert_eq!(pendings[1].explicit, false);
-        assert!(pendings.iter().any(|p| p.todo == alpha), "{} not found in {:?}", alpha, pendings);
-        assert!(pendings.iter().any(|p| p.todo == beta), "{} not found in {:?}", beta, pendings);
+        assert!(pendings.iter().any(|p| p.todo == alpha),
+                "{} not found in {:?}",
+                alpha,
+                pendings);
+        assert!(pendings.iter().any(|p| p.todo == beta),
+                "{} not found in {:?}",
+                beta,
+                pendings);
     }
 
     #[test]
@@ -527,16 +543,31 @@ mod tests {
         // #### THEN  ####
         assert!(result.is_ok(), "Enumeration result should be Ok(())");
         assert_eq!(pendings.len(), 4);
-        assert!(pendings.iter().any(|p| p.todo == alpha), "{} not found in {:?}", alpha, pendings);
-        assert!(pendings.iter().any(|p| p.todo == beta), "{} not found in {:?}", beta, pendings);
-        assert!(pendings.iter().any(|p| p.todo == gamma), "{} not found in {:?}", gamma, pendings);
-        assert!(pendings.iter().any(|p| p.todo == delta), "{} not found in {:?}", delta, pendings);
+        assert!(pendings.iter().any(|p| p.todo == alpha),
+                "{} not found in {:?}",
+                alpha,
+                pendings);
+        assert!(pendings.iter().any(|p| p.todo == beta),
+                "{} not found in {:?}",
+                beta,
+                pendings);
+        assert!(pendings.iter().any(|p| p.todo == gamma),
+                "{} not found in {:?}",
+                gamma,
+                pendings);
+        assert!(pendings.iter().any(|p| p.todo == delta),
+                "{} not found in {:?}",
+                delta,
+                pendings);
         for pending in pendings {
             if explicit_containers.contains(&pending.todo) {
-                assert!(pending.explicit, "Pending item {} expected to be explicit.", pending.todo);
+                assert!(pending.explicit,
+                        "Pending item {} expected to be explicit.",
+                        pending.todo);
             } else {
-                assert!(!pending.explicit, "Pending item {} expected to be explicit.",
-                    pending.todo);
+                assert!(!pending.explicit,
+                        "Pending item {} expected to be explicit.",
+                        pending.todo);
             }
         }
     }
@@ -565,14 +596,25 @@ mod tests {
         assert_eq!(pendings.len(), 2);
         assert_eq!(pendings[0].explicit, true);
         assert_eq!(pendings[1].explicit, true);
-        assert!(pendings.iter().any(|p| p.todo == alpha), "{} not found in {:?}", alpha, pendings);
-        assert!(pendings.iter().any(|p| p.todo == beta), "{} not found in {:?}", beta, pendings);
+        assert!(pendings.iter().any(|p| p.todo == alpha),
+                "{} not found in {:?}",
+                alpha,
+                pendings);
+        assert!(pendings.iter().any(|p| p.todo == beta),
+                "{} not found in {:?}",
+                beta,
+                pendings);
 
-        assert!(result.is_err(), "Enumeration result should be Err(_), was {:?}", result);
+        assert!(result.is_err(),
+                "Enumeration result should be Err(_), was {:?}",
+                result);
         if let Err(CompanionError::Inspection(err)) = result {
-            assert!(format!("{:?}", err).contains("Fake"), "Expected fake error.");
+            assert!(format!("{:?}", err).contains("Fake"),
+                    "Expected fake error.");
         } else {
-            assert!(false, "Expected inspection error, got {:?} instead.", result);
+            assert!(false,
+                    "Expected inspection error, got {:?} instead.",
+                    result);
         }
     }
 
@@ -589,45 +631,57 @@ mod tests {
         // mock inspector
         let beta = Rc::new("beta".to_owned());
         let mut inspector = MockInspector::default();
-        let spec1 = DomainSpec { domain_name: "one.beta.domain".to_owned(),
+        let spec1 = DomainSpec {
+            domain_name: "one.beta.domain".to_owned(),
             http_port: Some(80),
-            https_port: Some(443) };
-        let spec2 = DomainSpec { domain_name: "two.beta.domain".to_owned(),
+            https_port: Some(443),
+        };
+        let spec2 = DomainSpec {
+            domain_name: "two.beta.domain".to_owned(),
             http_port: Some(8080),
-            https_port: None };
-        inspector.inspect_results.insert(beta.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "beta.host".to_owned(),
-            specs: vec![spec1.clone(), spec2.clone()]
-        }));
+            https_port: None,
+        };
+        inspector.inspect_results.insert(beta.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "beta.host".to_owned(),
+                                             specs: vec![spec1.clone(), spec2.clone()],
+                                         }));
 
         // companion context
         let (term_send, term_recv) = chan::sync(1);
         let mut ctx = Context::new(Arc::new(cfg),
-            Box::new(inspector),
-            Box::new(publisher.clone()),
-            term_recv);
+                                   Box::new(inspector),
+                                   Box::new(publisher.clone()),
+                                   term_recv);
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
+        refresh_container(Pending {
+                              todo: beta,
+                              explicit: true,
+                          },
+                          &mut errors,
+                          &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() == 0, "Expected no errors, got {:#?}", errors);
         {
             let ref publisher_cell = &*publisher;
             let publisher_cell_ref = publisher_cell.borrow();
-            let mock : &MockPublisher = publisher_cell_ref.deref();
+            let mock: &MockPublisher = publisher_cell_ref.deref();
 
             assert!(mock.publications.iter().all(|p| p.host == "beta.host"),
-                "Host expected to be 'alpha.host' for all publications. List: {:#?}",
-                mock.publications);
+                    "Host expected to be 'alpha.host' for all publications. List: {:#?}",
+                    mock.publications);
             assert!(mock.publications.iter().any(|p| p.specs.iter().any(|s| *s == spec1)),
-                "Expected 'spec1' to be published.\nSpec1: {:#?}\nList: {:#?}",
-                spec1, mock.publications);
+                    "Expected 'spec1' to be published.\nSpec1: {:#?}\nList: {:#?}",
+                    spec1,
+                    mock.publications);
             assert!(mock.publications.iter().any(|p| p.specs.iter().any(|s| *s == spec2)),
-                "Expected 'spec2' to be published.\nSpec2: {:#?}\nList: {:#?}",
-                spec1, mock.publications);
+                    "Expected 'spec2' to be published.\nSpec2: {:#?}\nList: {:#?}",
+                    spec1,
+                    mock.publications);
         }
     }
 
@@ -641,29 +695,35 @@ mod tests {
 
         // mock publisher
         let publisher = Arc::new(RefCell::new(MockPublisher::default()));
-        publisher.borrow_mut().error_trigger =
-            Some(("domain".to_owned(), Box::new(|| From::from(MockError))));
+        publisher.borrow_mut().error_trigger = Some(("domain".to_owned(),
+                                                     Box::new(|| From::from(MockError))));
 
         // mock inspector
         let alpha = Rc::new("alpha".to_owned());
         let beta = Rc::new("beta".to_owned());
         let mut inspector = MockInspector::default();
-        let spec1 = DomainSpec { domain_name: "one.alpha.domain".to_owned(),
+        let spec1 = DomainSpec {
+            domain_name: "one.alpha.domain".to_owned(),
             http_port: Some(80),
-            https_port: Some(443) };
-        let spec2 = DomainSpec { domain_name: "two.beta.domain".to_owned(),
+            https_port: Some(443),
+        };
+        let spec2 = DomainSpec {
+            domain_name: "two.beta.domain".to_owned(),
             http_port: Some(8080),
-            https_port: None };
-        inspector.inspect_results.insert(beta.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "beta.host".to_owned(),
-            specs: vec![spec1.clone()]
-        }));
-        inspector.inspect_results.insert(alpha.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "alpha.host".to_owned(),
-            specs: vec![spec2.clone()]
-        }));
+            https_port: None,
+        };
+        inspector.inspect_results.insert(beta.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "beta.host".to_owned(),
+                                             specs: vec![spec1.clone()],
+                                         }));
+        inspector.inspect_results.insert(alpha.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "alpha.host".to_owned(),
+                                             specs: vec![spec2.clone()],
+                                         }));
 
         // companion context
         let (term_send, term_recv) = chan::sync(1);
@@ -674,13 +734,18 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
+        refresh_container(Pending {
+                              todo: beta,
+                              explicit: true,
+                          },
+                          &mut errors,
+                          &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() == 0, "Expected no errors, got {:#?}", errors);
         assert!(publisher.borrow().publications.len() == 0,
-            "Dry run shouldn't trigger publications. Got {:#?}",
-            publisher.borrow().publications);
+                "Dry run shouldn't trigger publications. Got {:#?}",
+                publisher.borrow().publications);
     }
 
     #[test]
@@ -692,29 +757,35 @@ mod tests {
 
         // mock publisher
         let publisher = Arc::new(RefCell::new(MockPublisher::default()));
-        publisher.borrow_mut().error_trigger =
-            Some(("domain".to_owned(), Box::new(|| From::from(MockError))));
+        publisher.borrow_mut().error_trigger = Some(("domain".to_owned(),
+                                                     Box::new(|| From::from(MockError))));
 
         // mock inspector
         let alpha = Rc::new("alpha".to_owned());
         let beta = Rc::new("beta".to_owned());
         let mut inspector = MockInspector::default();
-        let spec1 = DomainSpec { domain_name: "one.alpha.domain".to_owned(),
+        let spec1 = DomainSpec {
+            domain_name: "one.alpha.domain".to_owned(),
             http_port: Some(80),
-            https_port: Some(443) };
-        let spec2 = DomainSpec { domain_name: "two.beta.domain".to_owned(),
+            https_port: Some(443),
+        };
+        let spec2 = DomainSpec {
+            domain_name: "two.beta.domain".to_owned(),
             http_port: Some(8080),
-            https_port: None };
-        inspector.inspect_results.insert(beta.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "beta.host".to_owned(),
-            specs: vec![spec1.clone()]
-        }));
-        inspector.inspect_results.insert(alpha.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "alpha.host".to_owned(),
-            specs: vec![spec2.clone()]
-        }));
+            https_port: None,
+        };
+        inspector.inspect_results.insert(beta.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "beta.host".to_owned(),
+                                             specs: vec![spec1.clone()],
+                                         }));
+        inspector.inspect_results.insert(alpha.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "alpha.host".to_owned(),
+                                             specs: vec![spec2.clone()],
+                                         }));
 
         // companion context
         let (term_send, term_recv) = chan::sync(1);
@@ -725,13 +796,19 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
+        refresh_container(Pending {
+                              todo: beta,
+                              explicit: true,
+                          },
+                          &mut errors,
+                          &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() > 0, "Expected some errors, got {:#?}", errors);
         assert!(errors.iter().any(|e| format!("{:?}", e).contains("Mock")));
-        assert!(publisher.borrow().publications.len() == 0, "Unexpected publications: {:#?}",
-            publisher.borrow().publications);
+        assert!(publisher.borrow().publications.len() == 0,
+                "Unexpected publications: {:#?}",
+                publisher.borrow().publications);
     }
 
     #[test]
@@ -749,22 +826,28 @@ mod tests {
         let alpha = Rc::new("alpha".to_owned());
         let beta = Rc::new("beta".to_owned());
         let mut inspector = MockInspector::default();
-        let spec1 = DomainSpec { domain_name: "one.alpha.domain".to_owned(),
+        let spec1 = DomainSpec {
+            domain_name: "one.alpha.domain".to_owned(),
             http_port: Some(80),
-            https_port: Some(443) };
-        let spec2 = DomainSpec { domain_name: "two.beta.domain".to_owned(),
+            https_port: Some(443),
+        };
+        let spec2 = DomainSpec {
+            domain_name: "two.beta.domain".to_owned(),
             http_port: Some(8080),
-            https_port: None };
-        inspector.inspect_results.insert(beta.clone(), Ok(Inspection {
-            envvar_present: false,
-            host: "beta.host".to_owned(),
-            specs: Vec::new()
-        }));
-        inspector.inspect_results.insert(alpha.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "alpha.host".to_owned(),
-            specs: vec![spec2.clone()]
-        }));
+            https_port: None,
+        };
+        inspector.inspect_results.insert(beta.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: false,
+                                             host: "beta.host".to_owned(),
+                                             specs: Vec::new(),
+                                         }));
+        inspector.inspect_results.insert(alpha.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "alpha.host".to_owned(),
+                                             specs: vec![spec2.clone()],
+                                         }));
 
         // companion context
         let (term_send, term_recv) = chan::sync(1);
@@ -775,13 +858,19 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
+        refresh_container(Pending {
+                              todo: beta,
+                              explicit: true,
+                          },
+                          &mut errors,
+                          &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() > 0, "Expected some errors, got {:#?}", errors);
         assert!(errors.iter().any(|e| format!("{:?}", e).contains("EnvVarMissing")));
-        assert!(publisher.borrow().publications.len() == 0, "Unexpected publications: {:#?}",
-            publisher.borrow().publications);
+        assert!(publisher.borrow().publications.len() == 0,
+                "Unexpected publications: {:#?}",
+                publisher.borrow().publications);
     }
 
     #[test]
@@ -799,22 +888,28 @@ mod tests {
         let alpha = Rc::new("alpha".to_owned());
         let beta = Rc::new("beta".to_owned());
         let mut inspector = MockInspector::default();
-        let spec1 = DomainSpec { domain_name: "one.alpha.domain".to_owned(),
+        let spec1 = DomainSpec {
+            domain_name: "one.alpha.domain".to_owned(),
             http_port: Some(80),
-            https_port: Some(443) };
-        let spec2 = DomainSpec { domain_name: "two.beta.domain".to_owned(),
+            https_port: Some(443),
+        };
+        let spec2 = DomainSpec {
+            domain_name: "two.beta.domain".to_owned(),
             http_port: Some(8080),
-            https_port: None };
-        inspector.inspect_results.insert(beta.clone(), Ok(Inspection {
-            envvar_present: false,
-            host: "beta.host".to_owned(),
-            specs: Vec::new()
-        }));
-        inspector.inspect_results.insert(alpha.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "alpha.host".to_owned(),
-            specs: vec![spec2.clone()]
-        }));
+            https_port: None,
+        };
+        inspector.inspect_results.insert(beta.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: false,
+                                             host: "beta.host".to_owned(),
+                                             specs: Vec::new(),
+                                         }));
+        inspector.inspect_results.insert(alpha.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "alpha.host".to_owned(),
+                                             specs: vec![spec2.clone()],
+                                         }));
 
         // companion context
         let (term_send, term_recv) = chan::sync(1);
@@ -825,13 +920,19 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending { todo: beta, explicit: false }, &mut errors, &mut ctx);
+        refresh_container(Pending {
+                              todo: beta,
+                              explicit: false,
+                          },
+                          &mut errors,
+                          &mut ctx);
 
         // #### THEN  ####
         // This time, the inspection error shouldn't be treated as something serious
         assert!(errors.len() == 0, "Expected no errors, got {:#?}", errors);
-        assert!(publisher.borrow().publications.len() == 0, "Unexpected publications: {:#?}",
-            publisher.borrow().publications);
+        assert!(publisher.borrow().publications.len() == 0,
+                "Unexpected publications: {:#?}",
+                publisher.borrow().publications);
     }
 
     #[test]
@@ -849,22 +950,28 @@ mod tests {
         let alpha = Rc::new("alpha".to_owned());
         let beta = Rc::new("beta".to_owned());
         let mut inspector = MockInspector::default();
-        let spec1 = DomainSpec { domain_name: "one.alpha.domain".to_owned(),
+        let spec1 = DomainSpec {
+            domain_name: "one.alpha.domain".to_owned(),
             http_port: Some(80),
-            https_port: Some(443) };
-        let spec2 = DomainSpec { domain_name: "two.beta.domain".to_owned(),
+            https_port: Some(443),
+        };
+        let spec2 = DomainSpec {
+            domain_name: "two.beta.domain".to_owned(),
             http_port: Some(8080),
-            https_port: None };
-        inspector.inspect_results.insert(beta.clone(), Ok(Inspection {
-            envvar_present: false,
-            host: "beta.host".to_owned(),
-            specs: Vec::new()
-        }));
-        inspector.inspect_results.insert(alpha.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "alpha.host".to_owned(),
-            specs: vec![spec2.clone()]
-        }));
+            https_port: None,
+        };
+        inspector.inspect_results.insert(beta.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: false,
+                                             host: "beta.host".to_owned(),
+                                             specs: Vec::new(),
+                                         }));
+        inspector.inspect_results.insert(alpha.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "alpha.host".to_owned(),
+                                             specs: vec![spec2.clone()],
+                                         }));
 
         // companion context
         let (term_send, term_recv) = chan::sync(1);
@@ -875,13 +982,19 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
+        refresh_container(Pending {
+                              todo: beta,
+                              explicit: true,
+                          },
+                          &mut errors,
+                          &mut ctx);
 
         // #### THEN  ####
         // This time, the inspection error shouldn't be treated as something serious
         assert!(errors.len() == 0, "Expected no errors, got {:#?}", errors);
-        assert!(publisher.borrow().publications.len() == 0, "Unexpected publications: {:#?}",
-            publisher.borrow().publications);
+        assert!(publisher.borrow().publications.len() == 0,
+                "Unexpected publications: {:#?}",
+                publisher.borrow().publications);
     }
 
     #[test]
@@ -899,18 +1012,23 @@ mod tests {
         let alpha = Rc::new("alpha".to_owned());
         let beta = Rc::new("beta".to_owned());
         let mut inspector = MockInspector::default();
-        let spec1 = DomainSpec { domain_name: "one.alpha.domain".to_owned(),
+        let spec1 = DomainSpec {
+            domain_name: "one.alpha.domain".to_owned(),
             http_port: Some(80),
-            https_port: Some(443) };
-        let spec2 = DomainSpec { domain_name: "two.beta.domain".to_owned(),
+            https_port: Some(443),
+        };
+        let spec2 = DomainSpec {
+            domain_name: "two.beta.domain".to_owned(),
             http_port: Some(8080),
-            https_port: None };
+            https_port: None,
+        };
         inspector.inspect_results.insert(beta.clone(), Err(Box::new(|| From::from(FakeError))));
-        inspector.inspect_results.insert(alpha.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "alpha.host".to_owned(),
-            specs: vec![spec2.clone()]
-        }));
+        inspector.inspect_results.insert(alpha.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "alpha.host".to_owned(),
+                                             specs: vec![spec2.clone()],
+                                         }));
 
         // companion context
         let (term_send, term_recv) = chan::sync(1);
@@ -921,13 +1039,19 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending { todo: beta, explicit: false }, &mut errors, &mut ctx);
+        refresh_container(Pending {
+                              todo: beta,
+                              explicit: false,
+                          },
+                          &mut errors,
+                          &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() > 0, "Expected some errors, got {:#?}", errors);
         assert!(errors.iter().any(|e| format!("{:?}", e).contains("Fake")));
-        assert!(publisher.borrow().publications.len() == 0, "Unexpected publications: {:#?}",
-            publisher.borrow().publications);
+        assert!(publisher.borrow().publications.len() == 0,
+                "Unexpected publications: {:#?}",
+                publisher.borrow().publications);
     }
 
     #[test]
@@ -945,18 +1069,23 @@ mod tests {
         let alpha = Rc::new("alpha".to_owned());
         let beta = Rc::new("beta".to_owned());
         let mut inspector = MockInspector::default();
-        let spec1 = DomainSpec { domain_name: "one.alpha.domain".to_owned(),
+        let spec1 = DomainSpec {
+            domain_name: "one.alpha.domain".to_owned(),
             http_port: Some(80),
-            https_port: Some(443) };
-        let spec2 = DomainSpec { domain_name: "two.beta.domain".to_owned(),
+            https_port: Some(443),
+        };
+        let spec2 = DomainSpec {
+            domain_name: "two.beta.domain".to_owned(),
             http_port: Some(8080),
-            https_port: None };
+            https_port: None,
+        };
         inspector.inspect_results.insert(beta.clone(), Err(Box::new(|| From::from(FakeError))));
-        inspector.inspect_results.insert(alpha.clone(), Ok(Inspection {
-            envvar_present: true,
-            host: "alpha.host".to_owned(),
-            specs: vec![spec2.clone()]
-        }));
+        inspector.inspect_results.insert(alpha.clone(),
+                                         Ok(Inspection {
+                                             envvar_present: true,
+                                             host: "alpha.host".to_owned(),
+                                             specs: vec![spec2.clone()],
+                                         }));
 
         // companion context
         let (term_send, term_recv) = chan::sync(1);
@@ -967,21 +1096,26 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending { todo: beta, explicit: false }, &mut errors, &mut ctx);
+        refresh_container(Pending {
+                              todo: beta,
+                              explicit: false,
+                          },
+                          &mut errors,
+                          &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() == 0, "Expected no errors, got {:#?}", errors);
-        assert!(publisher.borrow().publications.len() == 0, "Unexpected publications: {:#?}",
-            publisher.borrow().publications);
+        assert!(publisher.borrow().publications.len() == 0,
+                "Unexpected publications: {:#?}",
+                publisher.borrow().publications);
     }
 
     /// Normally, DomainSpec isn't directly comparable because instances might not be in canonical
     /// form, but for testing, this is good enough.
     impl PartialEq for DomainSpec {
         fn eq(&self, other: &DomainSpec) -> bool {
-            self.domain_name == other.domain_name
-                && self.http_port == other.http_port
-                && self.https_port == other.https_port
+            self.domain_name == other.domain_name && self.http_port == other.http_port &&
+            self.https_port == other.https_port
         }
     }
     impl Eq for DomainSpec {}

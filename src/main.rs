@@ -6,8 +6,8 @@ use std::rc::Rc;
 extern crate docopt;
 extern crate libbeachheadcompanion;
 
-use libbeachheadcompanion::common::{stay_calm_and, stay_very_calm_and, Config, MissingContainerHandling,
-    MissingEnvVarHandling};
+use libbeachheadcompanion::common::{stay_calm_and, stay_very_calm_and, Config,
+                                    MissingContainerHandling, MissingEnvVarHandling};
 use libbeachheadcompanion::inspector;
 use libbeachheadcompanion::publisher;
 use libbeachheadcompanion::companion;
@@ -150,14 +150,14 @@ impl Args {
                 Some(self.flag_expire)
             },
             refresh_seconds: self.flag_refresh
-                                 .map(|r| {
-                                     if r == 0 {
-                                         None
-                                     } else {
-                                         Some(r)
-                                     }
-                                 })
-                                 .unwrap(),
+                .map(|r| {
+                    if r == 0 {
+                        None
+                    } else {
+                        Some(r)
+                    }
+                })
+                .unwrap(),
             docker_network: self.flag_docker_network,
             missing_envvar: match (self.flag_error_missing_envvar,
                                    self.flag_ignore_missing_envvar) {
@@ -200,7 +200,7 @@ fn args_transform(args: &mut Args) {
 fn main() {
     // Parse arguments (handles --help and --version)
     let mut args: Args = DOCOPT.decode()
-                               .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|e| e.exit());
 
     args_transform(&mut args);
 

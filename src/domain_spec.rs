@@ -53,8 +53,8 @@ impl DomainSpec {
             }
 
             let raw_params = captures.at(3)
-                                     .map(|params| params.trim().split(':').collect())
-                                     .unwrap_or_else(|| Vec::new());
+                .map(|params| params.trim().split(':').collect())
+                .unwrap_or_else(|| Vec::new());
 
             let mut spec = DomainSpec {
                 domain_name: domain_name.to_owned(),
@@ -84,7 +84,8 @@ impl DomainSpec {
                     _ => {
                         // Forwards compatibility: don't treat unknown parameters as errors.
                         warn!("Unknown domain spec parameter. Parameter name: '{}' value: {:?}",
-                              key, value);
+                              key,
+                              value);
                     }
                 }
             }
