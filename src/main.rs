@@ -126,7 +126,7 @@ struct Args {
     flag_ignore_missing_envvar: bool,
     flag_enumerate: bool,
     flag_systemd: bool,
-    flag_no_timestamp: bool
+    flag_no_timestamp: bool,
 }
 
 // Implement Default by parsing an (almost) empty command line.
@@ -179,7 +179,7 @@ impl Args {
                 MissingContainerHandling::Ignore
             },
             systemd: self.flag_systemd,
-            watchdog_microseconds: None
+            watchdog_microseconds: None,
         };
         (config, self.arg_containers)
     }
@@ -212,13 +212,13 @@ fn read_systemd_config(config: &mut Config) -> Result<(), std::io::Error> {
             Ok(0) => {
                 config.watchdog_microseconds = None;
                 Ok(())
-            },
+            }
             Ok(dog_us) => {
                 config.watchdog_microseconds = Some(dog_us);
                 Ok(())
             }
             // Yes, we need to re-package the Result object because the Ok-type has changed.
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     } else {
         Ok(())
@@ -265,10 +265,7 @@ fn init_log(args: &Args) -> Result<(), log::SetLoggerError> {
     if args.flag_no_timestamp {
         // An external log collection system probably adds timestamps to our messages
         log_builder.format(|record| {
-            format!("[{}] {}: {}",
-                    record.location().module_path(),
-                    record.level(),
-                    record.args())
+            format!("[{}] {}: {}", record.location().module_path(), record.level(), record.args())
         });
     } else {
         log_builder.format(|record| {
@@ -367,8 +364,7 @@ mod test {
         args_transform(&mut args);
 
         // #### THEN  ####
-        assert!(args.flag_refresh.is_some(),
-                "flag_refresh should have a default");
+        assert!(args.flag_refresh.is_some(), "flag_refresh should have a default");
         assert!(args.flag_refresh.unwrap() < args.flag_expire,
                 "flag_refresh {} must be smaller than expire (60)",
                 args.flag_refresh.unwrap());

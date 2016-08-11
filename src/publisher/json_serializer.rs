@@ -26,9 +26,7 @@ pub fn backend_setup(host: &str, port: u16) -> Option<json::Object> {
 pub fn domain_config(container_host: &str, spec: &DomainSpec) -> json::Object {
     let mut domain_config = json::Object::new();
     svc_config(&mut domain_config, JSON_ID, Some(spec.spec_id()));
-    svc_config(&mut domain_config,
-               JSON_DOMAIN,
-               Some(spec.domain_name.clone()));
+    svc_config(&mut domain_config, JSON_DOMAIN, Some(spec.domain_name.clone()));
     svc_config(&mut domain_config,
                JSON_HTTP,
                spec.http_port.map(|http_port| backend_setup(&container_host, http_port)));
@@ -160,9 +158,7 @@ mod tests {
                 assert_eq_domain_spec(&cfgs[1], &host, &spec2);
             }
             other => {
-                assert!(false,
-                        "Multiple domain configs, expected Json::Array, got {:?}",
-                        other)
+                assert!(false, "Multiple domain configs, expected Json::Array, got {:?}", other)
             }
         }
     }
@@ -200,11 +196,7 @@ mod tests {
                 assert_backend_spec(obj, JSON_HTTP, host, domain_spec.http_port);
                 assert_backend_spec(obj, JSON_HTTPS, host, domain_spec.https_port);
             }
-            other => {
-                assert!(false,
-                        "For domain config, expected Json::Object, got {:?}",
-                        other)
-            }
+            other => assert!(false, "For domain config, expected Json::Object, got {:?}", other),
         }
     }
 
@@ -217,8 +209,7 @@ mod tests {
 
     fn assert_json_obj_field_present(obj: &json::Object, field: &str) {
         assert!(obj.contains_key(field),
-                concat!("JSON object expected to have field {}. ",
-                        "No such field. Object: {:#?}"),
+                concat!("JSON object expected to have field {}. ", "No such field. Object: {:#?}"),
                 field,
                 obj);
     }

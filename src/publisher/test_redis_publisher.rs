@@ -3,11 +3,11 @@ use redis::{self, Commands};
 
 // In case we want to throw a lock around redis server creation. Reduces risk of address-in-use
 // problems, but slows down test execution.
-//use std::sync::Mutex;
-//lazy_static! {
+// use std::sync::Mutex;
+// lazy_static! {
 //    static ref REDIS_START_LOCK : Mutex<()> = Mutex::new(());
-//}
-//let lck = REDIS_START_LOCK.lock().unwrap();
+// }
+// let lck = REDIS_START_LOCK.lock().unwrap();
 
 // The Redis server handling code is taken from the redis-rs project itself.
 // https://github.com/mitsuhiko/redis-rs/blob/master/tests/test_basic.rs
@@ -58,22 +58,21 @@ impl RedisServer {
             let mut process = cmd.spawn().unwrap();
             match process.wait_timeout(Duration::from_millis(500)).unwrap() {
                 Some(err_status) => {
-                    warn!("Redis child process exited unexpectedly early with exit status {}", err_status);
+                    warn!("Redis child process exited unexpectedly early with exit status {}",
+                          err_status);
                     if retries_left > 0 {
                         retries_left -= 1;
                         continue;
                     } else {
-                        panic!("Failed to launch a redis sub-process that wouldn't exit immediately.");
+                        panic!("Failed to launch a redis sub-process that wouldn't exit \
+                                immediately.");
                     }
-                },
+                }
                 None => {
                     // it's probably running fine
                 }
             }
-            return RedisServer {
-                process: process,
-                addr: addr,
-            }
+            return RedisServer { process: process, addr: addr };
         }
     }
 
@@ -134,7 +133,12 @@ impl TestContext {
                             sleep(wait_interval);
                         } else {
                             let exit = server.process.wait().unwrap();
-                            panic!("Could not connect to ad-hoc redis instance after {}ms. Server address: {:?}, error: {}. Redis process status: {:?}",MAX_WAIT_MS, server.addr, err, exit.code());
+                            panic!("Could not connect to ad-hoc redis instance after {}ms. \
+                                    Server address: {:?}, error: {}. Redis process status: {:?}",
+                                   MAX_WAIT_MS,
+                                   server.addr,
+                                   err,
+                                   exit.code());
                         }
                     } else {
                         panic!("Could not connect to ad-hoc redis instance: {}", err);
@@ -148,10 +152,7 @@ impl TestContext {
         }
         redis::cmd("FLUSHDB").execute(&con);
 
-        TestContext {
-            server: server,
-            client: client,
-        }
+        TestContext { server: server, client: client }
     }
 
     fn connection(&self) -> redis::Connection {
@@ -185,19 +186,14 @@ fn test_hostonly() {
     let mut redis_publisher = ::publisher::redis::RedisPublisher::new(config.clone());
 
     // #### WHEN  ####
-    redis_publisher.publish(&Publication {
-            host: "example.com".to_owned(),
-            specs: Vec::new(),
-        })
+    redis_publisher.publish(&Publication { host: "example.com".to_owned(), specs: Vec::new() })
         .unwrap();
 
     // #### THEN  ####
     let mut key_query = (*config.key_prefix).to_owned();
     key_query.push_str("*");
     let keys: Vec<String> = tc.client.keys(key_query).unwrap();
-    assert!(keys.len() == 1,
-            "Expected Redis to contain exactly 1 key. Actual: {:?}",
-            keys);
+    assert!(keys.len() == 1, "Expected Redis to contain exactly 1 key. Actual: {:?}", keys);
 
     let effective_key = keys.into_iter().next().unwrap();
     let rawpub: Json = tc.client.get(effective_key).unwrap();
@@ -206,9 +202,7 @@ fn test_hostonly() {
             "top-level value stored in redis must be an array, was {:?}",
             rawpub);
     let specs: &json::Array = rawpub.as_array().unwrap();
-    assert!(specs.len() == 0,
-            "zero domain specs expected, got {:?}",
-            specs);
+    assert!(specs.len() == 0, "zero domain specs expected, got {:?}", specs);
 }
 
 #[test]
@@ -241,9 +235,7 @@ fn test_domains() {
     let mut key_query = (*config.key_prefix).to_owned();
     key_query.push_str("*");
     let keys: Vec<String> = tc.client.keys(key_query).unwrap();
-    assert!(keys.len() == 1,
-            "Expected Redis to contain exactly 1 key. Actual: {:?}",
-            keys);
+    assert!(keys.len() == 1, "Expected Redis to contain exactly 1 key. Actual: {:?}", keys);
 
     let effective_key = keys.into_iter().next().unwrap();
     let rawpub: Json = tc.client.get(effective_key).unwrap();
@@ -252,9 +244,7 @@ fn test_domains() {
             "top-level value stored in redis must be an array, was {:?}",
             rawpub);
     let specs: &json::Array = rawpub.as_array().unwrap();
-    assert!(specs.len() == 2,
-            "two domain specs expected, got {:#?}",
-            specs);
+    assert!(specs.len() == 2, "two domain specs expected, got {:#?}", specs);
 
     for rawspec in specs {
         let (id, spec) = parse_domain_config(rawspec, "example.com");
@@ -305,9 +295,7 @@ fn test_domains_update() {
     let mut key_query = (*config.key_prefix).to_owned();
     key_query.push_str("*");
     let keys: Vec<String> = tc.client.keys(key_query).unwrap();
-    assert!(keys.len() == 1,
-            "Expected Redis to contain exactly 1 key. Actual: {:?}",
-            keys);
+    assert!(keys.len() == 1, "Expected Redis to contain exactly 1 key. Actual: {:?}", keys);
 
     let effective_key = keys.into_iter().next().unwrap();
     let rawpub: Json = tc.client.get(effective_key).unwrap();
@@ -316,9 +304,7 @@ fn test_domains_update() {
             "top-level value stored in redis must be an array, was {:?}",
             rawpub);
     let specs: &json::Array = rawpub.as_array().unwrap();
-    assert!(specs.len() == 2,
-            "two domain specs expected, got {:#?}",
-            specs);
+    assert!(specs.len() == 2, "two domain specs expected, got {:#?}", specs);
 
     for rawspec in specs {
         let (id, spec) = parse_domain_config(rawspec, "example.com");
@@ -377,9 +363,7 @@ fn test_domains_multi_host() {
     let mut key_query = (*config.key_prefix).to_owned();
     key_query.push_str("*");
     let keys: Vec<String> = tc.client.keys(key_query).unwrap();
-    assert!(keys.len() == 2,
-            "Expected Redis to contain exactly 2 keys. Actual: {:?}",
-            keys);
+    assert!(keys.len() == 2, "Expected Redis to contain exactly 2 keys. Actual: {:?}", keys);
 
     let effective_key = keys.into_iter().filter(|x| x.contains("example.com")).next().unwrap();
     let rawpub: Json = tc.client.get(effective_key).unwrap();
@@ -388,9 +372,7 @@ fn test_domains_multi_host() {
             "top-level value stored in redis must be an array, was {:?}",
             rawpub);
     let specs: &json::Array = rawpub.as_array().unwrap();
-    assert!(specs.len() == 2,
-            "two domain specs expected, got {:#?}",
-            specs);
+    assert!(specs.len() == 2, "two domain specs expected, got {:#?}", specs);
 
     for rawspec in specs {
         let (id, spec) = parse_domain_config(rawspec, "example.com");
@@ -453,9 +435,7 @@ fn test_domains_multi_host2() {
     let mut key_query = (*config.key_prefix).to_owned();
     key_query.push_str("*");
     let keys: Vec<String> = tc.client.keys(key_query).unwrap();
-    assert!(keys.len() == 2,
-            "Expected Redis to contain exactly 2 keys. Actual: {:?}",
-            keys);
+    assert!(keys.len() == 2, "Expected Redis to contain exactly 2 keys. Actual: {:?}", keys);
 
     let effective_key = keys.into_iter().filter(|x| x.contains("example.com")).next().unwrap();
     let rawpub: Json = tc.client.get(effective_key).unwrap();
@@ -464,9 +444,7 @@ fn test_domains_multi_host2() {
             "top-level value stored in redis must be an array, was {:?}",
             rawpub);
     let specs: &json::Array = rawpub.as_array().unwrap();
-    assert!(specs.len() == 2,
-            "two domain specs expected, got {:#?}",
-            specs);
+    assert!(specs.len() == 2, "two domain specs expected, got {:#?}", specs);
 
     for rawspec in specs {
         let (id, spec) = parse_domain_config(rawspec, "example.com");
@@ -511,9 +489,7 @@ fn test_domain_id() {
     let mut key_query = (*config.key_prefix).to_owned();
     key_query.push_str("*");
     let keys: Vec<String> = tc.client.keys(key_query).unwrap();
-    assert!(keys.len() == 1,
-            "Expected Redis to contain exactly 1 key. Actual: {:?}",
-            keys);
+    assert!(keys.len() == 1, "Expected Redis to contain exactly 1 key. Actual: {:?}", keys);
 
     let effective_key = keys.into_iter().next().unwrap();
     let rawpub: Json = tc.client.get(effective_key).unwrap();
@@ -522,18 +498,12 @@ fn test_domain_id() {
             "top-level value stored in redis must be an array, was {:?}",
             rawpub);
     let specs: &json::Array = rawpub.as_array().unwrap();
-    assert!(specs.len() > 0,
-            "at least one domain spec expected, got {:#?}",
-            specs);
+    assert!(specs.len() > 0, "at least one domain spec expected, got {:#?}", specs);
 
     for rawspec in specs {
         let (id, _) = parse_domain_config(rawspec, "example.com");
-        assert!(!id.contains("."),
-                "The domain id must not contain dots: {}",
-                id);
-        assert!(!id.contains("-"),
-                "The domain id must not contain dashes: {}",
-                id);
+        assert!(!id.contains("."), "The domain id must not contain dots: {}", id);
+        assert!(!id.contains("-"), "The domain id must not contain dashes: {}", id);
     }
 }
 
@@ -567,9 +537,7 @@ fn test_ttl_no_expire() {
     let mut key_query = (*config.key_prefix).to_owned();
     key_query.push_str("*");
     let keys: Vec<String> = tc.client.keys(key_query).unwrap();
-    assert!(keys.len() == 1,
-            "Expected Redis to contain exactly 1 key. Actual: {:?}",
-            keys);
+    assert!(keys.len() == 1, "Expected Redis to contain exactly 1 key. Actual: {:?}", keys);
 
     let effective_key = keys.into_iter().next().unwrap();
     let rcon = tc.client.get_connection().unwrap();
@@ -610,9 +578,7 @@ fn test_ttl_expire() {
     let mut key_query = (*config.key_prefix).to_owned();
     key_query.push_str("*");
     let keys: Vec<String> = tc.client.keys(key_query).unwrap();
-    assert!(keys.len() == 1,
-            "Expected Redis to contain exactly 1 key. Actual: {:?}",
-            keys);
+    assert!(keys.len() == 1, "Expected Redis to contain exactly 1 key. Actual: {:?}", keys);
 
     let effective_key = keys.into_iter().next().unwrap();
     let rcon = tc.client.get_connection().unwrap();
@@ -638,10 +604,7 @@ fn parse_domain_config(raw_domain_config: &Json, expected_host: &str) -> (String
 
     // ID
     let id = raw_domain_config.get(JSON_ID);
-    assert!(id.is_some(),
-            "expected {} field in {:#?}",
-            JSON_ID,
-            raw_domain_config);
+    assert!(id.is_some(), "expected {} field in {:#?}", JSON_ID, raw_domain_config);
     let id = id.unwrap();
     assert!(id.is_string(),
             "expected {} field to be a string in {:#?}",
@@ -651,10 +614,7 @@ fn parse_domain_config(raw_domain_config: &Json, expected_host: &str) -> (String
 
     // DOMAIN
     let domain = raw_domain_config.get(JSON_DOMAIN);
-    assert!(domain.is_some(),
-            "expected {} field in {:#?}",
-            JSON_DOMAIN,
-            raw_domain_config);
+    assert!(domain.is_some(), "expected {} field in {:#?}", JSON_DOMAIN, raw_domain_config);
     let domain = domain.unwrap();
     assert!(domain.is_string(),
             "expected {} field to be a string. Parent: {:#?}",
@@ -666,12 +626,7 @@ fn parse_domain_config(raw_domain_config: &Json, expected_host: &str) -> (String
     let http = parse_host_config(raw_domain_config, JSON_HTTP, expected_host);
     let https = parse_host_config(raw_domain_config, JSON_HTTPS, expected_host);
 
-    (id,
-     DomainSpec {
-        domain_name: domain,
-        http_port: http,
-        https_port: https,
-    })
+    (id, DomainSpec { domain_name: domain, http_port: http, https_port: https })
 }
 
 fn parse_host_config(raw_domain_config: &json::Object,

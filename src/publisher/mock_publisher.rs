@@ -14,10 +14,7 @@ pub struct MockPublisher {
 
 impl Default for MockPublisher {
     fn default() -> MockPublisher {
-        MockPublisher {
-            error_trigger: None,
-            publications: Vec::new(),
-        }
+        MockPublisher { error_trigger: None, publications: Vec::new() }
     }
 }
 

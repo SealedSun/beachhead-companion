@@ -45,10 +45,7 @@ impl Debug for MockInspector {
 
 impl MockInspector {
     pub fn new() -> MockInspector {
-        MockInspector {
-            enumerate_result: Ok(Vec::new()),
-            inspect_results: HashMap::new(),
-        }
+        MockInspector { enumerate_result: Ok(Vec::new()), inspect_results: HashMap::new() }
     }
 }
 
@@ -95,10 +92,7 @@ impl Error for InspectionNotMocked {
 
 impl Display for InspectionNotMocked {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt,
-               "{}. Container name: {}",
-               self.description(),
-               self.container_name)
+        write!(fmt, "{}. Container name: {}", self.description(), self.container_name)
     }
 }
 

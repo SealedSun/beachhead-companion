@@ -16,10 +16,7 @@ pub struct DockerInspector {
 
 impl DockerInspector {
     pub fn new(config: Arc<Config>) -> DockerInspector {
-        DockerInspector {
-            config: config,
-            docker_client_opt: None,
-        }
+        DockerInspector { config: config, docker_client_opt: None }
     }
 
     fn create_docker_client(&mut self) -> &mut Docker {
@@ -62,11 +59,7 @@ impl Inspect for DockerInspector {
         let mut envvar_present = false;
         let mut specs = Vec::new();
         try!(parse_container_env_vars(&env_opt, &config, &mut envvar_present, &mut specs));
-        Ok(Inspection {
-            envvar_present: envvar_present,
-            specs: specs,
-            host: container_host,
-        })
+        Ok(Inspection { envvar_present: envvar_present, specs: specs, host: container_host })
     }
 }
 

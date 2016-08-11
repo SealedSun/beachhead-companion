@@ -114,10 +114,7 @@ pub struct DomainSpecError {
 
 impl Display for DomainSpecError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(fmt,
-                    "{} Domain name: \"{}\"",
-                    self.description(),
-                    self.domain_name));
+        try!(write!(fmt, "{} Domain name: \"{}\"", self.description(), self.domain_name));
         if let Some(ref key) = self.key {
             try!(write!(fmt, " Option name: \"{}\"", key));
         }
@@ -299,8 +296,7 @@ mod tests {
         let mut specs = Vec::new();
 
         // #### WHEN  ####
-        DomainSpec::parse_all("admin-internal.example.org:http=8080:https=8043",
-                              &mut specs)
+        DomainSpec::parse_all("admin-internal.example.org:http=8080:https=8043", &mut specs)
             .expect("Parse \"admin-internal.example.org:http=8080:https=8043\" successfully");
 
         // #### THEN  ####

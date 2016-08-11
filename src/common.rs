@@ -58,7 +58,7 @@ pub struct Config {
     /// Whether service manager notifications (READY, WATCHDOG) are enabled.
     pub systemd: bool,
     /// The number of milliseconds a service manager waits between 'alive' pings from this program.
-    pub watchdog_microseconds: Option<u64>
+    pub watchdog_microseconds: Option<u64>,
 }
 
 /// Behaviour when confronted with a container that does not have a beachhead environment variable
@@ -116,7 +116,7 @@ impl Default for Config {
             missing_container: Default::default(),
             enumerate: false,
             systemd: false,
-            watchdog_microseconds: None
+            watchdog_microseconds: None,
         }
     }
 }
@@ -221,10 +221,8 @@ mod tests {
     #[test]
     fn optional_result_full() {
         init_log();
-        assert_eq!(optional_result::<&str, &str>(Some(Ok("ok"))),
-                   Ok(Some("ok")));
-        assert_eq!(optional_result::<&str, &str>(Some(Err("fail"))),
-                   Err("fail"));
+        assert_eq!(optional_result::<&str, &str>(Some(Ok("ok"))), Ok(Some("ok")));
+        assert_eq!(optional_result::<&str, &str>(Some(Err("fail"))), Err("fail"));
         assert_eq!(optional_result::<&str, &str>(None), Ok(None));
     }
 }

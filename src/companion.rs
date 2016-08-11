@@ -3,7 +3,7 @@ use std;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
-use std::cmp::{Ordering,min};
+use std::cmp::{Ordering, min};
 use std::rc::Rc;
 
 use log::LogLevel;
@@ -21,7 +21,7 @@ struct Context {
     pub inspector: Box<Inspect>,
     pub publisher: Box<Publish>,
     pub termination_signal: chan::Receiver<Signal>,
-    next_watchdog: Option<chrono::DateTime<chrono::Local>>
+    next_watchdog: Option<chrono::DateTime<chrono::Local>>,
 }
 
 impl Context {
@@ -36,7 +36,7 @@ impl Context {
             termination_signal: termination_signal,
             inspector: inspector,
             publisher: publisher,
-            next_watchdog: next_watchdog
+            next_watchdog: next_watchdog,
         }
     }
 
@@ -58,11 +58,7 @@ impl Context {
         // Add explicitly listed containers
         for name in explicit_container_names {
             let key: Rc<String> = name.clone();
-            let _ = container_index.insert(key,
-                                           Pending {
-                                               explicit: true,
-                                               todo: name.clone(),
-                                           });
+            let _ = container_index.insert(key, Pending { explicit: true, todo: name.clone() });
         }
 
         // Add enumerated containers
@@ -80,10 +76,8 @@ impl Context {
                 for name in enumeration.drain(..) {
                     let boxed_name = Rc::new(name);
                     let key = boxed_name.clone();
-                    container_index.entry(key).or_insert(Pending {
-                        explicit: false,
-                        todo: boxed_name,
-                    });
+                    container_index.entry(key)
+                        .or_insert(Pending { explicit: false, todo: boxed_name });
                 }
             }
         } else {
@@ -102,7 +96,8 @@ impl Context {
             let start_of_wait = chrono::Local::now();
             let timeout_duration = chrono::Duration::seconds(refresh_seconds as i64);
             let next_refresh = start_of_wait + timeout_duration;
-            let (_s1, refresh_timeout) = deadline_to_alarm_clock(start_of_wait, Some(next_refresh), "refresh");
+            let (_s1, refresh_timeout) =
+                deadline_to_alarm_clock(start_of_wait, Some(next_refresh), "refresh");
 
             loop {
                 // Check signals explicitly. They take precedence over waiting.
@@ -131,9 +126,9 @@ impl Context {
 
                 // Use chan_select! to wait on multiple channels at the same time.
                 // If multiple channels are ready, chan_select! picks an arbitrary channel.
-                // For the watchdog it is not important in which branch we wake up, a refresh iteration
-                // also includes an 'alive' ping. The PING branch is for the situation where we wake up
-                // *just* to satisfy the service manager.
+                // For the watchdog it is not important in which branch we wake up, a refresh
+                // iteration also includes an 'alive' ping. The PING branch is for the situation
+                // where we wake up *just* to satisfy the service manager.
                 let do_next: i32;
                 const DO_STOP: i32 = 0;
                 const DO_CONTINUE: i32 = 1;
@@ -141,7 +136,8 @@ impl Context {
                 {
                     // Compute effective timeouts for the next wait
                     let now = chrono::Local::now();
-                    let (_s2, watchdog_timeout) = deadline_to_alarm_clock(now, self.next_watchdog, "watchdog");
+                    let (_s2, watchdog_timeout) =
+                        deadline_to_alarm_clock(now, self.next_watchdog, "watchdog");
 
                     // Same as above: constrain mutable borrow to the smallest possible regions.
                     let rsig = &mut self.termination_signal;
@@ -170,7 +166,12 @@ impl Context {
                     self.notify_status("Waiting");
                     // no return, re-enter the wait loop
                 } else {
-                    error!(concat!("Program error: unexpected state in companion loop: {}. ", "Expected one of {}, {} or {}"), do_next, DO_STOP, DO_CONTINUE, DO_PING);
+                    error!(concat!("Program error: unexpected state in companion loop: {}. ",
+                                   "Expected one of {}, {} or {}"),
+                           do_next,
+                           DO_STOP,
+                           DO_CONTINUE,
+                           DO_PING);
                     return false;
                 }
             }
@@ -200,21 +201,28 @@ impl Context {
                 // Shutting down just because our  handler stopped paying attention to us
                 // also seems wrong somehow.
                 warn!(concat!("Failed to update service status in ",
-                                "systemd service manager (notify). Error: {}"), e);
+                              "systemd service manager (notify). Error: {}"),
+                      e);
             }
             if let Some(dog_us) = self.config.watchdog_microseconds {
                 // The official suggestion is to send the 'alive' ping at half the interval required
                 // by the service manager. We'll go for 45% so that we are guaranteed to get two
                 // chances at the alive ping.
-                let timeout = chrono::Duration::microseconds(((dog_us as f64)*0.45) as i64);
-                debug!("Next watchdog timeout will be at {}, will wake up to send ping at {}", now + chrono::Duration::microseconds(min(dog_us, std::i64::MAX as u64) as i64), now + timeout);
+                let timeout = chrono::Duration::microseconds(((dog_us as f64) * 0.45) as i64);
+                debug!("Next watchdog timeout will be at {}, will wake up to send ping at {}",
+                       now +
+                       chrono::Duration::microseconds(min(dog_us, std::i64::MAX as u64) as i64),
+                       now + timeout);
                 self.next_watchdog = Some(now + timeout);
             }
         }
     }
 }
 
-fn deadline_to_alarm_clock(now: DateTime<Local>, deadline : Option<DateTime<Local>>, desc: &str) -> (Option<chan::Sender<()>>, chan::Receiver<()>) {
+fn deadline_to_alarm_clock(now: DateTime<Local>,
+                           deadline: Option<DateTime<Local>>,
+                           desc: &str)
+                           -> (Option<chan::Sender<()>>, chan::Receiver<()>) {
     if let Some(deadline) = deadline {
         if now > deadline {
             debug!("{} deadline already passed.", desc);
@@ -224,7 +232,9 @@ fn deadline_to_alarm_clock(now: DateTime<Local>, deadline : Option<DateTime<Loca
             (None, recv)
         } else {
             let remaining_refresh_timeout = deadline - now;
-            debug!("{} deadline comes up in {}ms.", desc, remaining_refresh_timeout.num_milliseconds());
+            debug!("{} deadline comes up in {}ms.",
+                   desc,
+                   remaining_refresh_timeout.num_milliseconds());
             // conversion to std Duration fails if duration is negative. We rules that situation
             // out with the `now > deadline` condition. The unwrap() is safe.
             (None, chan::after(remaining_refresh_timeout.to_std().unwrap()))
@@ -234,16 +244,13 @@ fn deadline_to_alarm_clock(now: DateTime<Local>, deadline : Option<DateTime<Loca
         // return the sender along with the channel, will cause the caller to keep the channel open
         // without sending a signal. We use a rendezvous channel so that 'accidental' uses of the
         // sender get detected (deadlock)
-        let (send,recv) = chan::sync(0);
+        let (send, recv) = chan::sync(0);
         (Some(send), recv)
     }
 }
 
 fn to_publication(inspection: Pending<Inspection>) -> Publication {
-    Publication {
-        host: inspection.todo.host,
-        specs: inspection.todo.specs,
-    }
+    Publication { host: inspection.todo.host, specs: inspection.todo.specs }
 }
 
 fn notify(entries: &[(&str, &str)]) -> Result<(), CompanionError> {
@@ -307,10 +314,12 @@ pub fn run(config: Arc<Config>,
             // We are shutting down. This can have various reasons. Maybe we are in run-once mode
             // or maybe we received a signal.
             if config.systemd {
-                let shutdown = [(daemon::STATE_STATUS, "Stopping"),(STATE_STOPPING, "1")];
+                let shutdown = [(daemon::STATE_STATUS, "Stopping"), (STATE_STOPPING, "1")];
                 if let Err(e) = notify(&shutdown) {
-                    warn!(concat!("Failed to update service status in systemd service manager (notify)",
-                                "before shutting down. Error: {}"), e);
+                    warn!(concat!("Failed to update service status in systemd service manager \
+                                   (notify)",
+                                  "before shutting down. Error: {}"),
+                          e);
                 }
             }
 
@@ -356,10 +365,7 @@ fn refresh_container(name: Pending<Rc<String>>,
                 level = LogLevel::Info;
                 consider_error = false
             }
-            log!(level,
-                 "Failed to inspect {}. Skipping. Error: {}",
-                 current_container,
-                 e);
+            log!(level, "Failed to inspect {}. Skipping. Error: {}", current_container, e);
             if consider_error {
                 errors.push(e)
             }
@@ -393,9 +399,7 @@ fn refresh_container(name: Pending<Rc<String>>,
     let publication = to_publication(inspection);
 
     if config.dry_run {
-        info!("DRY RUN: would update {} with {:#?}",
-              current_container,
-              publication)
+        info!("DRY RUN: would update {} with {:#?}", current_container, publication)
     } else {
         info!("Updating configuration for container {}. Publishing {:?}",
               current_container,
@@ -423,19 +427,11 @@ struct Pending<T> {
 impl<T> Pending<T> {
     #[allow(dead_code)]
     pub fn map<R, F: FnOnce(T) -> R>(self, f: F) -> Pending<R> {
-        Pending {
-            explicit: self.explicit,
-            todo: f(self.todo),
-        }
+        Pending { explicit: self.explicit, todo: f(self.todo) }
     }
     pub fn try_map<R, E, F: FnOnce(T) -> Result<R, E>>(self, f: F) -> Result<Pending<R>, E> {
         let explicit = self.explicit;
-        f(self.todo).map(|t| {
-            Pending {
-                explicit: explicit,
-                todo: t,
-            }
-        })
+        f(self.todo).map(|t| Pending { explicit: explicit, todo: t })
     }
 }
 
@@ -541,8 +537,7 @@ mod tests {
         let do_continue = ctx.wait();
 
         // #### THEN  ####
-        assert!(!do_continue,
-                "One shot companion context tried to run more than once.");
+        assert!(!do_continue, "One shot companion context tried to run more than once.");
     }
 
     #[test]
@@ -563,8 +558,7 @@ mod tests {
 
         // #### THEN  ####
         assert!(!do_continue,
-                concat!("Companion context tried to run after ",
-                        "termination was requested."));
+                concat!("Companion context tried to run after ", "termination was requested."));
     }
 
     #[test]
@@ -585,8 +579,7 @@ mod tests {
 
         // #### THEN  ####
         assert!(!do_continue,
-                concat!("Companion context tried to run after ",
-                        "termination was requested."));
+                concat!("Companion context tried to run after ", "termination was requested."));
     }
 
     #[test]
@@ -631,14 +624,8 @@ mod tests {
         assert_eq!(pendings.len(), 2);
         assert_eq!(pendings[0].explicit, true);
         assert_eq!(pendings[1].explicit, true);
-        assert!(pendings.iter().any(|p| p.todo == alpha),
-                "{} not found in {:?}",
-                alpha,
-                pendings);
-        assert!(pendings.iter().any(|p| p.todo == beta),
-                "{} not found in {:?}",
-                beta,
-                pendings);
+        assert!(pendings.iter().any(|p| p.todo == alpha), "{} not found in {:?}", alpha, pendings);
+        assert!(pendings.iter().any(|p| p.todo == beta), "{} not found in {:?}", beta, pendings);
     }
 
     #[test]
@@ -666,14 +653,8 @@ mod tests {
         assert_eq!(pendings.len(), 2);
         assert_eq!(pendings[0].explicit, false);
         assert_eq!(pendings[1].explicit, false);
-        assert!(pendings.iter().any(|p| p.todo == alpha),
-                "{} not found in {:?}",
-                alpha,
-                pendings);
-        assert!(pendings.iter().any(|p| p.todo == beta),
-                "{} not found in {:?}",
-                beta,
-                pendings);
+        assert!(pendings.iter().any(|p| p.todo == alpha), "{} not found in {:?}", alpha, pendings);
+        assert!(pendings.iter().any(|p| p.todo == beta), "{} not found in {:?}", beta, pendings);
     }
 
     #[test]
@@ -701,27 +682,13 @@ mod tests {
         // #### THEN  ####
         assert!(result.is_ok(), "Enumeration result should be Ok(())");
         assert_eq!(pendings.len(), 4);
-        assert!(pendings.iter().any(|p| p.todo == alpha),
-                "{} not found in {:?}",
-                alpha,
-                pendings);
-        assert!(pendings.iter().any(|p| p.todo == beta),
-                "{} not found in {:?}",
-                beta,
-                pendings);
-        assert!(pendings.iter().any(|p| p.todo == gamma),
-                "{} not found in {:?}",
-                gamma,
-                pendings);
-        assert!(pendings.iter().any(|p| p.todo == delta),
-                "{} not found in {:?}",
-                delta,
-                pendings);
+        assert!(pendings.iter().any(|p| p.todo == alpha), "{} not found in {:?}", alpha, pendings);
+        assert!(pendings.iter().any(|p| p.todo == beta), "{} not found in {:?}", beta, pendings);
+        assert!(pendings.iter().any(|p| p.todo == gamma), "{} not found in {:?}", gamma, pendings);
+        assert!(pendings.iter().any(|p| p.todo == delta), "{} not found in {:?}", delta, pendings);
         for pending in pendings {
             if explicit_containers.contains(&pending.todo) {
-                assert!(pending.explicit,
-                        "Pending item {} expected to be explicit.",
-                        pending.todo);
+                assert!(pending.explicit, "Pending item {} expected to be explicit.", pending.todo);
             } else {
                 assert!(!pending.explicit,
                         "Pending item {} expected to be explicit.",
@@ -754,25 +721,14 @@ mod tests {
         assert_eq!(pendings.len(), 2);
         assert_eq!(pendings[0].explicit, true);
         assert_eq!(pendings[1].explicit, true);
-        assert!(pendings.iter().any(|p| p.todo == alpha),
-                "{} not found in {:?}",
-                alpha,
-                pendings);
-        assert!(pendings.iter().any(|p| p.todo == beta),
-                "{} not found in {:?}",
-                beta,
-                pendings);
+        assert!(pendings.iter().any(|p| p.todo == alpha), "{} not found in {:?}", alpha, pendings);
+        assert!(pendings.iter().any(|p| p.todo == beta), "{} not found in {:?}", beta, pendings);
 
-        assert!(result.is_err(),
-                "Enumeration result should be Err(_), was {:?}",
-                result);
+        assert!(result.is_err(), "Enumeration result should be Err(_), was {:?}", result);
         if let Err(CompanionError::Inspection(err)) = result {
-            assert!(format!("{:?}", err).contains("Fake"),
-                    "Expected fake error.");
+            assert!(format!("{:?}", err).contains("Fake"), "Expected fake error.");
         } else {
-            assert!(false,
-                    "Expected inspection error, got {:?} instead.",
-                    result);
+            assert!(false, "Expected inspection error, got {:?} instead.", result);
         }
     }
 
@@ -815,12 +771,7 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending {
-                              todo: beta,
-                              explicit: true,
-                          },
-                          &mut errors,
-                          &mut ctx);
+        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() == 0, "Expected no errors, got {:#?}", errors);
@@ -892,12 +843,7 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending {
-                              todo: beta,
-                              explicit: true,
-                          },
-                          &mut errors,
-                          &mut ctx);
+        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() == 0, "Expected no errors, got {:#?}", errors);
@@ -954,12 +900,7 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending {
-                              todo: beta,
-                              explicit: true,
-                          },
-                          &mut errors,
-                          &mut ctx);
+        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() > 0, "Expected some errors, got {:#?}", errors);
@@ -1016,12 +957,7 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending {
-                              todo: beta,
-                              explicit: true,
-                          },
-                          &mut errors,
-                          &mut ctx);
+        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() > 0, "Expected some errors, got {:#?}", errors);
@@ -1078,12 +1014,7 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending {
-                              todo: beta,
-                              explicit: false,
-                          },
-                          &mut errors,
-                          &mut ctx);
+        refresh_container(Pending { todo: beta, explicit: false }, &mut errors, &mut ctx);
 
         // #### THEN  ####
         // This time, the inspection error shouldn't be treated as something serious
@@ -1140,12 +1071,7 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending {
-                              todo: beta,
-                              explicit: true,
-                          },
-                          &mut errors,
-                          &mut ctx);
+        refresh_container(Pending { todo: beta, explicit: true }, &mut errors, &mut ctx);
 
         // #### THEN  ####
         // This time, the inspection error shouldn't be treated as something serious
@@ -1197,12 +1123,7 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending {
-                              todo: beta,
-                              explicit: false,
-                          },
-                          &mut errors,
-                          &mut ctx);
+        refresh_container(Pending { todo: beta, explicit: false }, &mut errors, &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() > 0, "Expected some errors, got {:#?}", errors);
@@ -1254,12 +1175,7 @@ mod tests {
         let mut errors = Vec::new();
 
         // #### WHEN  ####
-        refresh_container(Pending {
-                              todo: beta,
-                              explicit: false,
-                          },
-                          &mut errors,
-                          &mut ctx);
+        refresh_container(Pending { todo: beta, explicit: false }, &mut errors, &mut ctx);
 
         // #### THEN  ####
         assert!(errors.len() == 0, "Expected no errors, got {:#?}", errors);

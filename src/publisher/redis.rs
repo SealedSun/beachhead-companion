@@ -16,10 +16,7 @@ pub struct RedisPublisher {
 
 impl RedisPublisher {
     pub fn new(config: Arc<Config>) -> RedisPublisher {
-        RedisPublisher {
-            config: config,
-            redis_client_opt: None,
-        }
+        RedisPublisher { config: config, redis_client_opt: None }
     }
 
     fn create_redis_client(&mut self) -> RedisResult<&mut libredis::Client> {
@@ -28,11 +25,7 @@ impl RedisPublisher {
         } else {
             let addr = libredis::ConnectionAddr::Tcp((*self.config.redis_host).clone(),
                                                      self.config.redis_port);
-            let info = libredis::ConnectionInfo {
-                addr: Box::new(addr),
-                db: 0,
-                passwd: None,
-            };
+            let info = libredis::ConnectionInfo { addr: Box::new(addr), db: 0, passwd: None };
             let client = try!(libredis::Client::open(info));
             self.redis_client_opt = Some(client);
             Ok(self.redis_client_opt.as_mut().unwrap())
