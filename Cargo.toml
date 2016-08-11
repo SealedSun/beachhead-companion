@@ -48,6 +48,9 @@ lazy_static = "0.2.1"
 # Need to fix this as <0.2.3 because that bumped the url dependecy up
 cookie = "=0.2.2"
 
+# Support for service manager notifications (READY, WATCHDOG)
+systemd = "0.0.9"
+
 # Docker URL
 [dependencies.url]
 version = "^0.5.9"
@@ -65,3 +68,6 @@ git = "https://github.com/softprops/shiplift.git"
 
 [dev-dependencies.net2]
 version = "0.2"
+
+[dev-dependencies.wait-timeout]
+version = "0.1.3"

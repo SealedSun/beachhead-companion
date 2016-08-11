@@ -7,6 +7,7 @@ extern crate chrono;
 extern crate rustc_serialize;
 extern crate url;
 extern crate chan_signal;
+extern crate systemd;
 
 #[macro_use]
 extern crate log;

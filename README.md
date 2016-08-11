@@ -54,6 +54,8 @@ In the default case, `beachhead-companion` would therefore query the docker daem
 ### Why Redis?
 No particular reason. 
 It had the features I required: expiration of values and the ability to query values with a certain key prefix.
+In my case, I had to deal with single-node setups, so the dedicated configuration systems like `etcd` seemed like overkill.
+
 Teaching `beachhead-companion` to publish configuration to other systems shouldn't be too difficult to implement.
 I intentionally abstracted the publication away behind a [Publisher](src/publisher/mod.rs) trait.
 
@@ -61,3 +63,22 @@ I intentionally abstracted the publication away behind a [Publisher](src/publish
 Because I use docker in my deployment. 
 Again, it shouldn't be too difficult to teach `beachhead-companion` to access other configuration sources.
 There is an [Inspector](src/inspector/mod.rs) trait that abstracts the query part.
+
+### Why the name?
+The whole setup is ~~blatantly copied from~~ inspired by a combination of 
+[DigitalOcean's How to use `confd` and `etcd` to dynamically reconfigure services in CoreOS](https://www.digitalocean.com/community/tutorials/how-to-use-confd-and-etcd-to-dynamically-reconfigure-services-in-coreos) and a precursor to [docker-etcd-registrator](https://www.npmjs.com/package/docker-etcd-registrator)
+The 'companion' part came from me not remembering the exact wording of the article and picking the first synonym that came to mind.
+'Beachhead' is simply the name I used for the reverse proxy in the particular setup I wrote this tool for. 
+As in 'the part that comes into contact with the big bad internet.'
+
+## Building
+To build `beachhead-companion` you need
+ 
+ * cargo
+ * rustc
+ * openssh libraries and header files
+ * systemd libraries and header files
+
+The most convenient way to get rust and cargo is via [rustup](https://rustup.rs/). 
+The header files should be available in your OS distribution.
+It would not be difficult to make the `systemd` part of the build optional (not just an option at runtime) but I haven't seen the need so far.

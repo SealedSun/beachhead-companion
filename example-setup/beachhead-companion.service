@@ -1,0 +1,33 @@
+# Example Systemd beachhead-companion.service unit file.
+# Adapt as necessary for your use-case.
+
+[Unit]
+Description=Docker service registration
+# We use 'Wants' instead of 'Requires' because our service can still 'run' without docker and redis, it just won't be
+# very useful. 'Requires' would cause our service to be stopped when either of them become unavailable.
+Wants=docker.service
+After=docker.service
+Wants=redis.service
+After=redis.service
+
+[Service]
+# Add logging parameters here
+Environment='RUST_LOG='
+TimeoutSec=5
+# Use --no-timestamp because the systemd journal will add timestamps anyway
+ExecStart=/opt/bin/beachhead-companion --systemd --no-timestamp --redis-host=172.17.0.1 -- example acme
+
+Restart=on-failure
+RestartSec=10
+# To use Type=notify, you need to pass --systemd to the command.
+Type=notify
+# Attention: the watchdog timeout is essentially a timeout for an entire refresh iteration
+# (query docker daemon + update redis). These requests should normally not take long, but beachhead-companion will not
+# send 'alive' pings *during* an update cycle.
+# beachhead-companion will, of course, wake up to send the 'alive' ping if the refresh timeout is longer than the
+# watchdog timeout.
+WatchdogSec=10
+
+# To start the service automatically on boot, uncomment this section:
+#[Install]
+#WantedBy=multi-user.target

@@ -3,12 +3,14 @@ use std;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
-use std::cmp::Ordering;
+use std::cmp::{Ordering,min};
 use std::rc::Rc;
 
 use log::LogLevel;
 use chan;
+use chrono::{self, Local, DateTime};
 use chan_signal::Signal;
+use systemd::daemon;
 
 use inspector::{Inspect, Inspection, InspectionError};
 use publisher::{Publication, PublishingError, Publish};
@@ -19,6 +21,7 @@ struct Context {
     pub inspector: Box<Inspect>,
     pub publisher: Box<Publish>,
     pub termination_signal: chan::Receiver<Signal>,
+    next_watchdog: Option<chrono::DateTime<chrono::Local>>
 }
 
 impl Context {
@@ -27,11 +30,13 @@ impl Context {
            publisher: Box<Publish>,
            termination_signal: chan::Receiver<Signal>)
            -> Context {
+        let next_watchdog = config.watchdog_microseconds.map(|_| Local::now());
         Context {
             config: config,
             termination_signal: termination_signal,
             inspector: inspector,
             publisher: publisher,
+            next_watchdog: next_watchdog
         }
     }
 
@@ -94,27 +99,143 @@ impl Context {
     /// termination was requested)
     fn wait(&mut self) -> bool {
         if let Some(refresh_seconds) = self.config.refresh_seconds {
-            let rsig = &mut self.termination_signal;
-            debug!("Waiting for {} seconds", refresh_seconds);
-            let timeout_duration = std::time::Duration::from_secs(refresh_seconds as u64);
-            let refresh_timeout = chan::after(timeout_duration);
-            let do_continue: bool;
-            chan_select! {
-                rsig.recv() -> sig => {
-                    debug!("Received {:?} signal. Shutting down.", sig);
-                    do_continue = false
-                },
-                refresh_timeout.recv() => {
-                    // just continue with the loop
-                    do_continue = true
-                },
-            };
-            do_continue
+            let start_of_wait = chrono::Local::now();
+            let timeout_duration = chrono::Duration::seconds(refresh_seconds as i64);
+            let next_refresh = start_of_wait + timeout_duration;
+            let (_s1, refresh_timeout) = deadline_to_alarm_clock(start_of_wait, Some(next_refresh), "refresh");
+
+            loop {
+                // Check signals explicitly. They take precedence over waiting.
+                // This check also handles the case where a signal came in while we were busy
+                // refreshing a container configuration.
+                {
+                    // While parts of self are mutably borrowed, we can't call any functions
+                    // on self. So let's keep mutable borrowing constrained to this region.
+                    let rsig = &mut self.termination_signal;
+                    let signal_received;
+                    // NOTE: default needs to come first (required by macro)
+                    chan_select! {
+                        default => {
+                            signal_received = false;
+                        },
+                        rsig.recv() -> sig => {
+                            debug!("Received {:?} signal. Shutting down.", sig);
+                            signal_received = true;
+                        },
+                    }
+                    if signal_received {
+                        // Signal end of companion loop
+                        return false;
+                    }
+                }
+
+                // Use chan_select! to wait on multiple channels at the same time.
+                // If multiple channels are ready, chan_select! picks an arbitrary channel.
+                // For the watchdog it is not important in which branch we wake up, a refresh iteration
+                // also includes an 'alive' ping. The PING branch is for the situation where we wake up
+                // *just* to satisfy the service manager.
+                let do_next: i32;
+                const DO_STOP: i32 = 0;
+                const DO_CONTINUE: i32 = 1;
+                const DO_PING: i32 = 3;
+                {
+                    // Compute effective timeouts for the next wait
+                    let now = chrono::Local::now();
+                    let (_s2, watchdog_timeout) = deadline_to_alarm_clock(now, self.next_watchdog, "watchdog");
+
+                    // Same as above: constrain mutable borrow to the smallest possible regions.
+                    let rsig = &mut self.termination_signal;
+                    chan_select! {
+                        rsig.recv() -> sig => {
+                            debug!("Received {:?} signal. Shutting down.", sig);
+                            do_next = DO_STOP;
+                        },
+                        refresh_timeout.recv() => {
+                            // just continue with the loop
+                            do_next = DO_CONTINUE
+                        },
+                        watchdog_timeout.recv() => {
+                            debug!("Waking up to send 'alive' ping to service manager.");
+                            do_next = DO_PING
+                        }
+                    };
+                }
+
+                // Act on the outcome of the chan_select!
+                if do_next == DO_STOP {
+                    return false;
+                } else if do_next == DO_CONTINUE {
+                    return true;
+                } else if do_next == DO_PING {
+                    self.notify_status("Waiting");
+                    // no return, re-enter the wait loop
+                } else {
+                    error!(concat!("Program error: unexpected state in companion loop: {}. ", "Expected one of {}, {} or {}"), do_next, DO_STOP, DO_CONTINUE, DO_PING);
+                    return false;
+                }
+            }
         } else {
             // Only refresh once and then exit.
             debug!("Refresh disabled. Shutting down.");
             false
         }
+    }
+
+    /// Sends a notification to the systemd service manager. This notification will include two
+    /// fields: the supplied status (for display by the service manager) and a watchdog 'alive'
+    /// ping.
+    /// It also resets the internal deadline for the next watchdog alive ping.
+    fn notify_status(&mut self, status: &str) {
+        if self.config.systemd {
+            // Take the time now before the systemd call. That automatically makes our watchdog
+            // deadline conservative (relevant in case the systemd call somehow takes a significant
+            // amount of time).
+            let now = Local::now();
+            debug!("Notifying service manager. WATCHDOG=1, STATUS={}, now={}", status, now);
+            let alive = [(daemon::STATE_STATUS, status), (daemon::STATE_WATCHDOG, "1")];
+            if let Err(e) = notify(&alive) {
+                // Not 100% sure what to do in this situation. If we can't send the alive ping, we
+                // will probably be killed soon (might want to exit gracefully).
+                // On the other hand, we ourselves might be otherwise fine.
+                // Shutting down just because our  handler stopped paying attention to us
+                // also seems wrong somehow.
+                warn!(concat!("Failed to update service status in ",
+                                "systemd service manager (notify). Error: {}"), e);
+            }
+            if let Some(dog_us) = self.config.watchdog_microseconds {
+                // The official suggestion is to send the 'alive' ping at half the interval required
+                // by the service manager. We'll go for 45% so that we are guaranteed to get two
+                // chances at the alive ping.
+                let timeout = chrono::Duration::microseconds(((dog_us as f64)*0.45) as i64);
+                debug!("Next watchdog timeout will be at {}, will wake up to send ping at {}", now + chrono::Duration::microseconds(min(dog_us, std::i64::MAX as u64) as i64), now + timeout);
+                self.next_watchdog = Some(now + timeout);
+            }
+        }
+    }
+}
+
+fn deadline_to_alarm_clock(now: DateTime<Local>, deadline : Option<DateTime<Local>>, desc: &str) -> (Option<chan::Sender<()>>, chan::Receiver<()>) {
+    if let Some(deadline) = deadline {
+        if now > deadline {
+            debug!("{} deadline already passed.", desc);
+            // 'refresh_timeout' is a channel that gets unblocked immediately
+            let (send, recv) = chan::sync(0);
+            drop(send);
+            (None, recv)
+        } else {
+            let remaining_refresh_timeout = deadline - now;
+            debug!("{} deadline comes up in {}ms.", desc, remaining_refresh_timeout.num_milliseconds());
+            // conversion to std Duration fails if duration is negative. We rules that situation
+            // out with the `now > deadline` condition. The unwrap() is safe.
+            (None, chan::after(remaining_refresh_timeout.to_std().unwrap()))
+        }
+    } else {
+        debug!("{} deadline is disabled, will not wake up.", desc);
+        // return the sender along with the channel, will cause the caller to keep the channel open
+        // without sending a signal. We use a rendezvous channel so that 'accidental' uses of the
+        // sender get detected (deadlock)
+        let (send,recv) = chan::sync(0);
+        (Some(send), recv)
     }
 }
 
@@ -125,6 +246,19 @@ fn to_publication(inspection: Pending<Inspection>) -> Publication {
     }
 }
 
+fn notify(entries: &[(&str, &str)]) -> Result<(), CompanionError> {
+    let mut status = HashMap::new();
+    for entry in entries {
+        status.insert(entry.0, entry.1);
+    }
+    if let Err(e) = daemon::notify(false, status) {
+        Err(CompanionError::Systemd(e))
+    } else {
+        Ok(())
+    }
+}
+pub const STATE_STOPPING: &'static str = "STOPPING";
+
 pub fn run(config: Arc<Config>,
            inspector: Box<Inspect>,
            publisher: Box<Publish>,
@@ -133,9 +267,17 @@ pub fn run(config: Arc<Config>,
            -> Result<(), Vec<CompanionError>> {
     let mut ctx = Context::new(config.clone(), inspector, publisher, termination_signal);
     info!("Companion initialized.");
+    if config.systemd {
+        if let Err(e) = notify(&[(daemon::STATE_READY, "1")]) {
+            // Normally, we don't abort just because systemd communication failed, but if we can't
+            // even send the initial READY signal, we are obviously not ready.
+            return Err(vec![e]);
+        }
+    }
 
     loop {
         debug!("Start iteration.");
+        ctx.notify_status("Refreshing");
 
         // Errors that occurred in this iteration.
         let mut errors = Vec::new();
@@ -155,15 +297,26 @@ pub fn run(config: Arc<Config>,
             refresh_container(name, &mut errors, &mut ctx);
         }
 
+        ctx.notify_status("Waiting");
         // Wait for refresh timeout or external abort (kill signal).
         // Returns immediately if we are only supposed to run once.
         if ctx.wait() {
             // We only return the errors from the last iteration. All errors have been logged.
             errors.clear();
         } else {
+            // We are shutting down. This can have various reasons. Maybe we are in run-once mode
+            // or maybe we received a signal.
+            if config.systemd {
+                let shutdown = [(daemon::STATE_STATUS, "Stopping"),(STATE_STOPPING, "1")];
+                if let Err(e) = notify(&shutdown) {
+                    warn!(concat!("Failed to update service status in systemd service manager (notify)",
+                                "before shutting down. Error: {}"), e);
+                }
+            }
+
             // Return errors from the last iteration. This is mainly useful for the case where
             // we only run once. Lets the tool set an appropriate status code on program exit.
-            if errors.is_empty() {
+            if errors.is_empty() || config.refresh_seconds.is_some() {
                 return Ok(());
             } else {
                 return Err(errors);
@@ -326,6 +479,11 @@ quick_error! {
             description("Configured environment variable missing on container.")
             display(err) -> ("{} container name: {}, environment variable: {}",
                 err.description(), container_name, envvar)
+        }
+        Systemd(err: std::io::Error) {
+            description("Error communicating with systemd")
+            cause(err)
+            display(me) -> ("{} Error: {}", me.description(), err)
         }
     }
 }

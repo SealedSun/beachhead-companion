@@ -1,20 +1,25 @@
 use ::common::{self, Config};
 use redis::{self, Commands};
-use std::sync::Mutex;
 
-lazy_static! {
-    static ref REDIS_START_LOCK : Mutex<()> = Mutex::new(());
-}
+// In case we want to throw a lock around redis server creation. Reduces risk of address-in-use
+// problems, but slows down test execution.
+//use std::sync::Mutex;
+//lazy_static! {
+//    static ref REDIS_START_LOCK : Mutex<()> = Mutex::new(());
+//}
+//let lck = REDIS_START_LOCK.lock().unwrap();
 
 // The Redis server handling code is taken from the redis-rs project itself.
 // https://github.com/mitsuhiko/redis-rs/blob/master/tests/test_basic.rs
 // See LICENSE for a copy of the license
 extern crate net2;
+extern crate wait_timeout;
 
 use std::process;
 use std::thread::sleep;
 use std::time::Duration;
 use std::rc::Rc;
+use self::wait_timeout::ChildExt;
 
 pub struct RedisServer {
     pub process: process::Child,
@@ -24,32 +29,51 @@ pub struct RedisServer {
 #[allow(unused)]
 impl RedisServer {
     pub fn new() -> RedisServer {
-        let mut cmd = process::Command::new("redis-server");
-        cmd.stdout(process::Stdio::null())
-            .stderr(process::Stdio::null());
+        let mut retries_left = 3;
 
-        // this is technically a race but we can't do better with
-        // the tools that redis gives us :(
-        let lck = REDIS_START_LOCK.lock().unwrap();
-        let listener = net2::TcpBuilder::new_v4()
-            .unwrap()
-            .reuse_address(true)
-            .unwrap()
-            .bind("127.0.0.1:0")
-            .unwrap()
-            .listen(1)
-            .unwrap();
-        let server_port = listener.local_addr().unwrap().port();
-        cmd.arg("--port")
-            .arg(server_port.to_string())
-            .arg("--bind")
-            .arg("127.0.0.1");
-        let addr = redis::ConnectionAddr::Tcp("127.0.0.1".to_string(), server_port);
+        loop {
+            let mut cmd = process::Command::new("redis-server");
+            // switch these to ::inherit() if you need to see redis output
+            cmd.stdout(process::Stdio::null())
+                .stderr(process::Stdio::null());
 
-        let process = cmd.spawn().unwrap();
-        RedisServer {
-            process: process,
-            addr: addr,
+            // this is technically a race but we can't do better with
+            // the tools that redis gives us :(
+            let listener = net2::TcpBuilder::new_v4()
+                .unwrap()
+                .reuse_address(true)
+                .unwrap()
+                .bind("127.0.0.1:0")
+                .unwrap()
+                .listen(1)
+                .unwrap();
+            let server_port = listener.local_addr().unwrap().port();
+            drop(listener);
+            cmd.arg("--port")
+                .arg(server_port.to_string())
+                .arg("--bind")
+                .arg("127.0.0.1");
+            let addr = redis::ConnectionAddr::Tcp("127.0.0.1".to_string(), server_port);
+
+            let mut process = cmd.spawn().unwrap();
+            match process.wait_timeout(Duration::from_millis(500)).unwrap() {
+                Some(err_status) => {
+                    warn!("Redis child process exited unexpectedly early with exit status {}", err_status);
+                    if retries_left > 0 {
+                        retries_left -= 1;
+                        continue;
+                    } else {
+                        panic!("Failed to launch a redis sub-process that wouldn't exit immediately.");
+                    }
+                },
+                None => {
+                    // it's probably running fine
+                }
+            }
+            return RedisServer {
+                process: process,
+                addr: addr,
+            }
         }
     }
 
@@ -87,7 +111,7 @@ pub struct TestContext {
 #[allow(unused)]
 impl TestContext {
     fn new() -> TestContext {
-        let server = RedisServer::new();
+        let mut server = RedisServer::new();
 
         let client = redis::Client::open(redis::ConnectionInfo {
                 addr: Box::new(server.get_client_addr().clone()),
@@ -97,14 +121,23 @@ impl TestContext {
             .unwrap();
         let con;
 
-        let millisecond = Duration::from_millis(1);
+        const MAX_WAIT_MS: u64 = 1000;
+        const WAIT_INTERVAL_MS: u64 = 1;
+        let mut waited_ms = 0;
+        let wait_interval = Duration::from_millis(WAIT_INTERVAL_MS);
         loop {
             match client.get_connection() {
                 Err(err) => {
                     if err.is_connection_refusal() {
-                        sleep(millisecond);
+                        if waited_ms < MAX_WAIT_MS {
+                            waited_ms += 1;
+                            sleep(wait_interval);
+                        } else {
+                            let exit = server.process.wait().unwrap();
+                            panic!("Could not connect to ad-hoc redis instance after {}ms. Server address: {:?}, error: {}. Redis process status: {:?}",MAX_WAIT_MS, server.addr, err, exit.code());
+                        }
                     } else {
-                        panic!("Could not connect: {}", err);
+                        panic!("Could not connect to ad-hoc redis instance: {}", err);
                     }
                 }
                 Ok(x) => {

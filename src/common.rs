@@ -55,6 +55,10 @@ pub struct Config {
     /// running on the docker host. Containers found via enumeration and not listed explicitly are
     /// have slightly different error handling by default.
     pub enumerate: bool,
+    /// Whether service manager notifications (READY, WATCHDOG) are enabled.
+    pub systemd: bool,
+    /// The number of milliseconds a service manager waits between 'alive' pings from this program.
+    pub watchdog_microseconds: Option<u64>
 }
 
 /// Behaviour when confronted with a container that does not have a beachhead environment variable
@@ -111,6 +115,8 @@ impl Default for Config {
             missing_envvar: Default::default(),
             missing_container: Default::default(),
             enumerate: false,
+            systemd: false,
+            watchdog_microseconds: None
         }
     }
 }

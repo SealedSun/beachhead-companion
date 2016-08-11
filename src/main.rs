@@ -17,6 +17,7 @@ extern crate url;
 extern crate chan_signal;
 extern crate chrono;
 extern crate env_logger;
+extern crate systemd;
 
 #[macro_use]
 extern crate log;
@@ -28,6 +29,7 @@ extern crate lazy_static;
 use url::Url;
 use docopt::Docopt;
 use chan_signal::Signal;
+use systemd::daemon;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 const USAGE: &'static str = "
@@ -41,6 +43,8 @@ Options:
     --version           Show the version of beachhead-companion.
     --verbose           Show additional diagnostic output.
     --quiet             Only show warnings and errors.
+    --no-timestamp      Don't include timestamp in log messages. Used in case timestamps get added
+                        externally.
     --redis-host=HOST   Hostname or IP of the Redis server [default: localhost]
     --redis-port=PORT   Port of the Redis server [default: 6379]
     --expire=SECONDS    Number of seconds after which to expire registration.
@@ -58,6 +62,7 @@ Options:
     --enumerate         Ask docker daemon for list of all running containers instead of
                         passing individual container names/ids. Enumeration will be repeated
                         on each refresh (containers can come and go)
+    --systemd           Enable systemd service manager notifications (READY, WATCHDOG).
     --error-missing-envvar
                         Consider `envvar` missing on a container an error. Automatically enabled
                         for containers that are listed explicitly unless --ignore-missing-envvar
@@ -120,6 +125,8 @@ struct Args {
     flag_error_missing_container: bool,
     flag_ignore_missing_envvar: bool,
     flag_enumerate: bool,
+    flag_systemd: bool,
+    flag_no_timestamp: bool
 }
 
 // Implement Default by parsing an (almost) empty command line.
@@ -171,6 +178,8 @@ impl Args {
             } else {
                 MissingContainerHandling::Ignore
             },
+            systemd: self.flag_systemd,
+            watchdog_microseconds: None
         };
         (config, self.arg_containers)
     }
@@ -197,19 +206,45 @@ fn args_transform(args: &mut Args) {
     }
 }
 
+fn read_systemd_config(config: &mut Config) -> Result<(), std::io::Error> {
+    if config.systemd {
+        match daemon::watchdog_enabled(false) {
+            Ok(0) => {
+                config.watchdog_microseconds = None;
+                Ok(())
+            },
+            Ok(dog_us) => {
+                config.watchdog_microseconds = Some(dog_us);
+                Ok(())
+            }
+            // Yes, we need to re-package the Result object because the Ok-type has changed.
+            Err(e) => Err(e)
+        }
+    } else {
+        Ok(())
+    }
+}
+
 fn main() {
     // Parse arguments (handles --help and --version)
-    let mut args: Args = DOCOPT.decode()
-        .unwrap_or_else(|e| e.exit());
+    let mut args: Args = DOCOPT.decode().unwrap_or_else(|e| e.exit());
 
     args_transform(&mut args);
 
     stay_calm_and(init_log(&args));
-    let (config, arg_containers) = args.deconstruct();
+    let (mut config, arg_containers) = args.deconstruct();
+    if let Err(e) = read_systemd_config(&mut config) {
+        error!("systemd support is enabled, but sd_watchdog_enabled call failed. {}", e);
+        ::std::process::exit(2);
+    }
     let config = Arc::new(config);
     let mut containers = Vec::with_capacity(arg_containers.len());
     containers.extend(arg_containers.into_iter().map(|x| Rc::new(x)));
-    let abort_signal = chan_signal::notify(&[Signal::INT, Signal::TERM]);
+    // Signals
+    //   Interrupt is to support Ctrl+C
+    //   Term is to support graceful shutdown via kill
+    //   Abort is to support graceful shutdown when missing a systemd watchdog timeout
+    let abort_signal = chan_signal::notify(&[Signal::INT, Signal::TERM, Signal::ABRT]);
     let docker_inspector = Box::new(inspector::docker::DockerInspector::new(config.clone()));
     let redis_publisher = Box::new(publisher::redis::RedisPublisher::new(config.clone()));
 
@@ -225,13 +260,27 @@ fn main() {
 fn init_log(args: &Args) -> Result<(), log::SetLoggerError> {
     // initialize logging (depending on flags)
     let mut log_builder = env_logger::LogBuilder::new();
-    log_builder.format(|record| {
-        format!("{} [{}] {}: {}",
-                chrono::Local::now(),
-                record.location().module_path(),
-                record.level(),
-                record.args())
-    });
+
+    // log format
+    if args.flag_no_timestamp {
+        // An external log collection system probably adds timestamps to our messages
+        log_builder.format(|record| {
+            format!("[{}] {}: {}",
+                    record.location().module_path(),
+                    record.level(),
+                    record.args())
+        });
+    } else {
+        log_builder.format(|record| {
+            format!("{} [{}] {}: {}",
+                    chrono::Local::now(),
+                    record.location().module_path(),
+                    record.level(),
+                    record.args())
+        });
+    }
+
+    // application log level
     let level = match (args.flag_verbose, args.flag_quiet) {
         (false, false) => log::LogLevelFilter::Info,
         (true, _) => log::LogLevelFilter::Debug,
@@ -239,6 +288,8 @@ fn init_log(args: &Args) -> Result<(), log::SetLoggerError> {
     };
     log_builder.filter(Some("beachhead-companion"), level);
     log_builder.filter(Some("libbeachheadcompanion"), level);
+
+    // Additionally also consider overrides in the RUST_LOG environment variable
     if let Ok(rust_log) = env::var("RUST_LOG") {
         log_builder.parse(&rust_log);
     }
