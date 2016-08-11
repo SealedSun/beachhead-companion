@@ -26,6 +26,7 @@ use std::error::Error;
 use std::convert::From;
 
 use shiplift::{self, Docker};
+use shiplift::builder::{ContainerListOptions,ContainerFilter};
 
 use common::Config;
 use domain_spec::{self, DomainSpec};
@@ -53,10 +54,20 @@ impl DockerInspector {
 }
 
 impl Inspect for DockerInspector {
-    #[allow(unused_variables)]
     fn enumerate(&mut self, container_names: &mut Vec<String>) -> Result<(), InspectionError> {
-        panic!("docker inspector enumerate not implemented.")
+        let docker = self.create_docker_client();
+        let containers_api = docker.containers();
+        let list_options = ContainerListOptions::builder()
+            .filter(vec![ContainerFilter::Status("running".to_owned())])
+            .build();
+        let containers = try!(containers_api.list(&list_options));
+        debug!("Found {} running containers.", containers.len());
+        for container in containers {
+            container_names.push(container.Names.first().unwrap_or(&container.Id).to_owned())
+        }
+        Ok(())
     }
+
     fn inspect(&mut self, container_name: &str) -> Result<Inspection, InspectionError> {
         let config: Arc<Config> = self.config.clone();
         let (container_host, env_opt) = {

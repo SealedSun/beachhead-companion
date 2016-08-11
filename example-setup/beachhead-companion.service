@@ -15,7 +15,7 @@ After=redis.service
 Environment='RUST_LOG='
 TimeoutSec=5
 # Use --no-timestamp because the systemd journal will add timestamps anyway
-ExecStart=/opt/bin/beachhead-companion --systemd --no-timestamp --redis-host=172.17.0.1 -- example acme
+ExecStart=/opt/bin/beachhead-companion --systemd --no-timestamp --redis-host=172.17.0.1 --enumerate
 
 Restart=on-failure
 RestartSec=10
