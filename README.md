@@ -1,7 +1,7 @@
 # beachhead-companion
 Service registration using [Redis](http://redis.io/), [Docker](https://www.docker.com/) and [confd](http://www.confd.io/).
 
-`beachhead-companion` is a small daemon reads domain name and port information from docker meta data and publishes that
+`beachhead-companion` is a small daemon that reads domain name and port information from docker meta data and publishes that
 information on a redis instance, ready for `confd` to consume. 
 The primary use case is **automatic reverse proxy configuration based on container meta information**.
 
